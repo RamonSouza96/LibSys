@@ -1,0 +1,26 @@
+unit Main.Settings;
+
+interface
+
+uses FMX.Forms;
+
+type
+  TMain_Settings = class
+  Private
+    class procedure OpenFormMain; static;
+  Public
+   class procedure SlideEffectOpenForm;
+  end;
+
+implementation
+
+{ TMain_Settings }
+
+class procedure TMain_Settings.SlideEffectOpenForm;
+begin
+
+
+
+end;
+
+End.

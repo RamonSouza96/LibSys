@@ -1,0 +1,37 @@
+program LibSys;
+
+uses
+  System.StartUpCopy,
+  FMX.Forms,
+  Skia.FMX,
+  Login.View in 'FormLogin\Login.View.pas' {FormLogin},
+  Main.View in 'FormMain\Main.View.pas' {FormMain},
+  User.View in 'FormUser\User.View.pas' {FormUser},
+  BookManager.View in 'FormBookManager\BookManager.View.pas' {FormBookManager},
+  Movement.View in 'FormMovement\Movement.View.pas' {FormMovement},
+  Main.Settings in 'FormMain\Main.Settings.pas',
+  Login.Settings in 'FormLogin\Login.Settings.pas',
+  Login.Controller in 'FormLogin\Login.Controller.pas',
+  Dm in '..\DataModule\Dm.pas' {Dm1: TDataModule},
+  Dm.Script in '..\DataModule\Dm.Script.pas',
+  Dm.Utils in '..\DataModule\Dm.Utils.pas',
+  Helpers.HelpsAll in '..\Helpers\Helpers.HelpsAll.pas',
+  User.Settings in 'FormUser\User.Settings.pas',
+  User.Controller in 'FormUser\User.Controller.pas',
+  BookManager.Settings in 'FormBookManager\BookManager.Settings.pas',
+  BookManager.Controller in 'FormBookManager\BookManager.Controller.pas',
+  LibrarySession in '..\Classes\LibrarySession.pas',
+  Movement.Settings in 'FormMovement\Movement.Settings.pas',
+  Movement.Controller in 'FormMovement\Movement.Controller.pas',
+  FormWidgets in 'FormWidgets\FormWidgets.pas' {Form1};
+
+{$R *.res}
+
+begin
+  GlobalUseSkia := True;
+  Application.Initialize;
+  Application.CreateForm(TDm1, Dm1);
+  Application.CreateForm(TFormLogin, FormLogin);
+  Application.CreateForm(TForm1, Form1);
+  Application.Run;
+end.

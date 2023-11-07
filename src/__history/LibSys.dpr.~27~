@@ -1,0 +1,27 @@
+program LibSys;
+
+uses
+  System.StartUpCopy,
+  FMX.Forms,
+  Skia.FMX,
+  Login.View in 'Views\FormLogin\Login.View.pas' {FormLogin},
+  Main.View in 'Views\FormMain\Main.View.pas' {FormMain},
+  User.View in 'Views\FormUser\User.View.pas' {FormUser},
+  BookManager.View in 'Views\FormBookManager\BookManager.View.pas' {FormBookManager},
+  Movement.View in 'Views\FormMovement\Movement.View.pas' {FormMovement},
+  Main.Settings in 'Views\FormMain\Main.Settings.pas',
+  Login.Settings in 'Views\FormLogin\Login.Settings.pas',
+  Login.Controller in 'Views\FormLogin\Login.Controller.pas',
+  Dm.Utils in 'DataModule\Dm.Utils.pas',
+  Helpers.HelpsAll in 'Helpers\Helpers.HelpsAll.pas',
+  Dm in 'DataModule\Dm.pas' {Dm1: TDataModule};
+
+{$R *.res}
+
+begin
+  GlobalUseSkia := True;
+  Application.Initialize;
+  Application.CreateForm(TFormLogin, FormLogin);
+  Application.CreateForm(TDm1, Dm1);
+  Application.Run;
+end.

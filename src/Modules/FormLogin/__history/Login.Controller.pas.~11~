@@ -1,0 +1,123 @@
+﻿unit Login.Controller;
+
+interface
+
+uses FireDAC.Comp.Client,
+     System.SysUtils,
+     System.Classes,
+     Data.DB,
+     FMX.Types,
+     FireDAC.stan.Param,
+     FireDAC.Comp.DataSet,
+     FireDAC.Stan.Def,
+     FireDAC.Phys.SQLite,
+     FireDAC.Phys.SQLiteDef,
+     System.Types,
+     System.Generics.Collections,
+     FMX.Dialogs;
+type
+  TUserData = record
+    Result: string;
+    Usuario: string;
+    Senha: string;
+    Salt: string;
+    Status: string;
+  end;
+
+type
+  TUserData = record
+    Id: Integer;
+    Name: String;
+    Email: String;
+    Tipo: Integer; // 1 Operador, 2 Administrador, 3 Aluno
+    Result: string;
+    Usuario: string;
+    Senha: string;
+    Salt: string;
+    Status: string;
+
+  end;
+
+  TLoginController = class
+  private
+    FUserData: TUserData;
+  public
+    property UserData: TUserData read FUserData write FUserData;
+    class function GetUserData(ALogin: string): TUserData;
+  end;
+
+implementation
+
+uses Dm.Utils;
+
+{ TLoginController }
+
+class function TLoginController.GetUserData(ALogin: string): TUserData;
+const
+  LSql =
+      ' SELECT '+
+      '     USU_ID,'+
+      '     USU_NOME,'+
+      '     USU_LOGIN,'+
+      '     USU_SENHA,'+
+      '     USU_EMAIL,'+
+      '     USU_ATIVO,'+
+      '     USU_SALT,'+
+      '     USU_DATA_INATIVO'+
+      ' FROM  '+
+      '   Usuarios WHERE USU_LOGIN = :pLogin';
+var
+  LResultData: TUserData;
+  LQry: TFDQuery;
+  LCon: TFDConnection;
+begin
+  LCon := TDataUtils.CreateConnection;
+  LCon.Connected := True;
+  LQry := TFDQuery.Create(nil);
+  LQry.Connection := LCon;
+  try
+    with LQry do
+    begin
+      Close;
+      SQL.Clear;
+      SQL.Add(LSql);
+      ParamByName('pLogin').AsString := ALogin;
+      Prepared := True;
+      Open;
+
+      if RecordCount > 0 then
+      begin
+         LResultData.Usuario := FieldByName('USU_NOME').AsString;
+         LResultData.Senha := FieldByName('USU_SENHA').AsString;
+         LResultData.Salt := FieldByName('USU_SALT').AsString;
+
+         if FieldByName('USU_ATIVO').AsBoolean then
+         begin
+           LResultData.Status := 'Ativo';
+         end
+         else
+         begin
+           LResultData.Status := 'Inativo';
+         end;
+      end
+      else
+      begin
+        LResultData.Result := 'Usuário ou senha inválidos';
+        LResultData.Usuario := '';
+        LResultData.Senha := '';
+        LResultData.Salt := '';
+        LResultData.Status := '';
+      end;
+    end;
+  finally
+    LQry.Close;
+    LQry.DisposeOf;
+    LCon.Connected := False;
+    LCon.DisposeOf;
+  end;
+  Result := LResultData;
+end;
+
+
+end.
+

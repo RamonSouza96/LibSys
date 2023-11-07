@@ -1,0 +1,268 @@
+unit Movement.List;
+
+interface
+
+uses FMX.Layouts, FMX.Objects, Skia.FMX, FMX.Types, FMX.Graphics,
+     System.UITypes, FMX.Controls, System.Types, System.SysUtils,
+     System.Classes, Movement.Controller;
+
+type
+  TListMoviment = class
+  Private
+    class var RectCountainer: TRectangle;
+    class var SvgBorderLeft: TSkSvg;
+    class var LayAgroupTop: TLayout;
+    class var LayAgroupBody: TLayout;
+    class var LayAgroupButotns: TLayout;
+    class var LineBottom: TLine;
+    class var LblNameAluno: TSkLabel;
+    class var LblBookAmount: TSkLabel;
+    class var LblDate: TSkLabel;
+    class var LblDateReturn: TSkLabel;
+    class var SvgStatus: TSkSvg;
+    class var LblStatus: TSkLabel;
+    class var LblMulta: TSkLabel;
+    class var LblBookName: TSkLabel;
+    class var SvgPointGreen: TSkSvg;
+    class var SvgCirlceBlue: TSkSvg;
+    class var SvgButtonReceive: TSkSvg;
+    class var SvgButtonDelete: TSkSvg;
+    class procedure OnClickReceved(Sender: TObject);
+  Public
+    class procedure CreateCard(AScroll: TVertScrollBox; AId: Integer;
+      ANomeAluno, AQtdLivro, AData, ARetorno, AStatus: string; AMulta: Float32;
+      AColorStatus: TAlphaColor; AListaLivro: TArray<TBookData>);
+    class procedure ClearList(AScroll: TVertScrollBox);
+  end;
+
+implementation
+
+uses Widgets, Movement.Settings;
+
+class procedure TListMoviment.ClearList(AScroll: TVertScrollBox);
+var
+  I: Integer;
+begin
+  for I := AScroll.Content.ChildrenCount - 1 downto 0 do
+  begin
+    if AScroll.Content.Children[I] is TRectangle then
+    begin
+     if TRectangle(AScroll.Content.Children[I]).TagString = 'Card' then
+       AScroll.Content.RemoveObject(AScroll.Content.Children[I]);
+    end;
+  end;
+end;
+
+class procedure TListMoviment.CreateCard(AScroll: TVertScrollBox; AId: Integer;
+      ANomeAluno, AQtdLivro, AData, ARetorno, AStatus: string; AMulta: Float32;
+      AColorStatus: TAlphaColor; AListaLivro: TArray<TBookData>);
+begin
+  RectCountainer := TRectangle.Create(nil);
+  RectCountainer.Height := 133;
+  RectCountainer.Align := TAlignLayout.Top;
+  RectCountainer.Margins.Left := 20;
+  RectCountainer.Margins.Right := 20;
+  RectCountainer.Margins.Top := 20;
+  RectCountainer.HitTest := True;
+  RectCountainer.Fill.Color := TAlphaColors.White;
+  RectCountainer.Stroke.Kind := TBrushKind.None;
+  RectCountainer.Position.Y := AScroll.Content.Height + 500;
+  AScroll.Content.Height := AScroll.Content.Height + RectCountainer.Height;
+  RectCountainer.TagString := 'Card';
+  RectCountainer.XRadius := 10;
+  RectCountainer.YRadius := 10;
+
+  LayAgroupTop := TLayout.Create(RectCountainer);
+  LayAgroupTop.Height := 39;
+  LayAgroupTop.Margins.Bottom := 5;
+  LayAgroupTop.Align := TAlignLayout.MostTop;
+  LayAgroupTop.Parent := RectCountainer;
+
+  LineBottom := TLine.Create(LayAgroupTop);
+  LineBottom.Height := 1;
+  LineBottom.Align := TAlignLayout.MostBottom;
+  LineBottom.LineType := TLineType.Bottom;
+  LineBottom.Stroke.Thickness := 0.2;
+  LineBottom.Stroke.Color := $FF595959;
+  LineBottom.Parent := LayAgroupTop;
+
+  LblNameAluno := TSkLabel.Create(LayAgroupTop);
+  LblNameAluno.Align := TAlignLayout.MostLeft;
+  LblNameAluno.Margins.Left := 20;
+  LblNameAluno.AutoSize := False;
+  LblNameAluno.Text := '      ' + ANomeAluno;
+  LblNameAluno.Width := 180;
+  LblNameAluno.TextSettings.Font.Families := 'Poppins';
+  LblNameAluno.TextSettings.Font.Size := 16;
+  LblNameAluno.TextSettings.FontColor := TAlphaColors.Black;
+  LblNameAluno.TextSettings.Font.Weight := TFontWeight.Regular;
+  LblNameAluno.Parent := LayAgroupTop;
+
+  LblBookAmount := TSkLabel.Create(LayAgroupTop);
+  LblBookAmount.HitTest := False;
+  LblBookAmount.Margins.Left := 20;
+  LblBookAmount.AutoSize := False;
+   if StrToInt(AQtdLivro) > 1 then
+    LblBookAmount.Text := '      ' + AQtdLivro + ' Livro'
+   else
+  LblBookAmount.Text := '      ' + AQtdLivro + ' Livros';
+  LblBookAmount.Width := 98;
+  LblBookAmount.TextSettings.Font.Families := 'Poppins';
+  LblBookAmount.TextSettings.Font.Size := 16;
+  LblBookAmount.TextSettings.FontColor := TAlphaColors.Black;
+  LblBookAmount.TextSettings.Font.Weight := TFontWeight.Regular;
+  LblBookAmount.Parent := LayAgroupTop;
+
+  LblDate := TSkLabel.Create(LayAgroupTop);
+  LblDate.HitTest := False;
+  LblDate.Margins.Left := 10;
+  LblDate.AutoSize := False;
+  LblDate.Text := '      ' + AData;
+  LblDate.Width := 124;
+  LblDate.TextSettings.Font.Families := 'Poppins';
+  LblDate.TextSettings.Font.Size := 16;
+  LblDate.TextSettings.FontColor := TAlphaColors.Black;
+  LblDate.TextSettings.Font.Weight := TFontWeight.Regular;
+  LblDate.Parent := LayAgroupTop;
+
+  LblDateReturn := TSkLabel.Create(LayAgroupTop);
+  LblDateReturn.HitTest := False;
+  LblDateReturn.Margins.Left := 10;
+  LblDateReturn.AutoSize := False;
+  LblDateReturn.Text := '      ' + ARetorno;
+  LblDateReturn.Width := 124;
+  LblDateReturn.TextSettings.Font.Families := 'Poppins';
+  LblDateReturn.TextSettings.Font.Size := 16;
+  LblDateReturn.TextSettings.FontColor := TAlphaColors.Black;
+  LblDateReturn.TextSettings.Font.Weight := TFontWeight.Regular;
+  LblDateReturn.Parent := LayAgroupTop;
+
+  SvgStatus := TSkSvg.Create(LayAgroupTop);
+  SvgStatus.Align := TAlignLayout.Left;
+  SvgStatus.Margins.Right := 20;
+  SvgStatus.Margins.Left := 10;
+  SvgStatus.Margins.Top := 12;
+  SvgStatus.Margins.Bottom := 5;
+  SvgStatus.Width := 125;
+  SvgStatus.Svg.OverrideColor := AColorStatus;
+  SvgStatus.Svg.Source := FormWidgets.SkSvgStatus.Svg.Source;
+  SvgStatus.Parent := LayAgroupTop;
+
+  LblStatus := TSkLabel.Create(SvgStatus);
+  LblStatus.Align := TAlignLayout.Client;
+  LblStatus.AutoSize := False;
+  LblStatus.Text := AStatus;
+  LblStatus.TextSettings.Font.Families := 'Poppins';
+  LblStatus.TextSettings.Font.Size := 14;
+  LblStatus.TextSettings.Font.Weight := TFontWeight.SemiLight;
+  LblStatus.TextSettings.HorzAlign := TSkTextHorzAlign.Center;
+  LblStatus.TextSettings.FontColor := TAlphaColors.White;
+  LblStatus.Parent := SvgStatus;
+
+  LblMulta := TSkLabel.Create(LayAgroupTop);
+  LblMulta.Align := TAlignLayout.Right;
+  LblMulta.HitTest := False;
+  LblMulta.Margins.Left := 10;
+  LblMulta.Margins.Right := 10;
+  LblMulta.AutoSize := False;
+  LblMulta.Text := FormatFloat('R$ #,##0.00', AMulta);
+  LblMulta.Width := 72;
+  LblMulta.TextSettings.Font.Families := 'Poppins';
+  LblMulta.TextSettings.Font.Size := 16;
+  LblMulta.TextSettings.FontColor := TAlphaColors.Black;
+  LblMulta.TextSettings.Font.Weight := TFontWeight.Regular;
+  LblMulta.Parent := LayAgroupTop;
+
+  SvgCirlceBlue := TSkSvg.Create(LblNameAluno);
+  SvgCirlceBlue.Align := TAlignLayout.Left;
+  SvgCirlceBlue.Width := 17;
+  SvgCirlceBlue.Svg.Source := FormWidgets.SkSvgCircleBlue.Svg.Source;
+  SvgCirlceBlue.Parent := LblNameAluno;
+
+  SvgCirlceBlue := TSkSvg.Create(LblBookAmount);
+  SvgCirlceBlue.Align := TAlignLayout.Left;
+  SvgCirlceBlue.Width := 17;
+  SvgCirlceBlue.Svg.Source := FormWidgets.SkSvgCircleBlue.Svg.Source;
+  SvgCirlceBlue.Parent := LblBookAmount;
+
+  SvgCirlceBlue := TSkSvg.Create(LblDate);
+  SvgCirlceBlue.Align := TAlignLayout.Left;
+  SvgCirlceBlue.Width := 17;
+  SvgCirlceBlue.Svg.Source := FormWidgets.SkSvgCircleBlue.Svg.Source;
+  SvgCirlceBlue.Parent := LblDate;
+
+  SvgCirlceBlue := TSkSvg.Create(LblDateReturn);
+  SvgCirlceBlue.Align := TAlignLayout.Left;
+  SvgCirlceBlue.Width := 17;
+  SvgCirlceBlue.Svg.Source := FormWidgets.SkSvgCircleBlue.Svg.Source;
+  SvgCirlceBlue.Parent := LblDateReturn;
+
+  LayAgroupBody := TLayout.Create(RectCountainer);
+  LayAgroupBody.Align := TAlignLayout.Client;
+  LayAgroupBody.Parent := RectCountainer;
+
+  LayAgroupButotns := TLayout.Create(LayAgroupBody);
+  LayAgroupButotns.Align := TAlignLayout.MostRight;
+  LayAgroupButotns.Margins.Right := 15;
+  LayAgroupButotns.Width := 108;
+  LayAgroupButotns.Parent := LayAgroupBody;
+
+  for var I := 0 to Length(AListaLivro) - 1 do
+  begin
+    LblBookName := TSkLabel.Create(LayAgroupBody);
+    LblBookName.Align := TAlignLayout.Top;
+    LblBookName.HitTest := False;
+    LblBookName.Margins.Left := 20;
+    LblBookName.Margins.Top := 5;
+    LblBookName.AutoSize := False;
+    LblBookName.Text := '      ' + AListaLivro[I].NomeLivro;
+    LblBookName.Tag := AListaLivro[I].Id;
+    LblBookName.Height := 15;
+    LblBookName.TextSettings.Font.Families := 'Poppins';
+    LblBookName.TextSettings.Font.Size := 13;
+    LblBookName.TextSettings.FontColor := TAlphaColors.Black;
+    LblBookName.TextSettings.Font.Weight := TFontWeight.SemiLight;
+    LblBookName.Parent := LayAgroupBody;
+
+    SvgPointGreen := TSkSvg.Create(LblBookName);
+    SvgPointGreen.Align := TAlignLayout.Left;
+    SvgPointGreen.Width := 17;
+    SvgPointGreen.Svg.Source := FormWidgets.SkSvgPointGreen.Svg.Source;
+    SvgPointGreen.Svg.OverrideColor := $FF1CAF77;
+    SvgPointGreen.Parent := LblBookName;
+  end;
+
+  SvgButtonReceive := TSkSvg.Create(LayAgroupBody);
+  SvgButtonReceive.Align := TAlignLayout.Top;
+  SvgButtonReceive.HitTest := True;
+  SvgButtonReceive.Margins.Top := 15;
+  SvgButtonReceive.Svg.Source := FormWidgets.SkSvgReceived.Svg.Source;
+  SvgButtonReceive.tag := AId;
+  SvgButtonReceive.OnClick := OnClickReceved;
+  SvgButtonReceive.Parent := LayAgroupBody;
+
+  SvgButtonDelete := TSkSvg.Create(LayAgroupBody);
+  SvgButtonDelete.Align := TAlignLayout.MostRight;
+  SvgButtonDelete.HitTest := True;
+  SvgButtonDelete.Svg.Source := FormWidgets.SkSvgDelete.Svg.Source;
+  SvgButtonDelete.tag := AId;
+  SvgButtonDelete.OnClick := OnClickReceved;
+  SvgButtonDelete.Parent := LayAgroupBody;
+
+  LblDateReturn.Align := TAlignLayout.Left;
+  LblDate.Align := TAlignLayout.Left;
+  SvgStatus.Align := TAlignLayout.Left;
+  LblMulta.Align := TAlignLayout.Right;
+  LblBookAmount.Align := TAlignLayout.Left;
+
+  RectCountainer.Parent := AScroll;
+  RectCountainer.Align  := TAlignLayout.Top;
+
+end;
+
+class procedure TListMoviment.OnClickReceved(Sender: TObject);
+begin
+ TMovementSettings.ReceivedBooks(Sender);
+end;
+
+end.

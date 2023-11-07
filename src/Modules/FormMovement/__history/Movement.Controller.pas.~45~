@@ -1,0 +1,470 @@
+﻿unit Movement.Controller;
+
+interface
+
+uses
+  FireDAC.Comp.Client, System.SysUtils, System.Classes, Data.DB, FMX.Types, FireDAC.stan.Param,
+  FireDAC.Comp.DataSet, FireDAC.Stan.Def, FireDAC.Phys.SQLite, FireDAC.Phys.SQLiteDef, System.Types,
+  System.Generics.Collections, FMX.Dialogs, System.TypInfo, System.Rtti;
+
+
+
+type
+  TBookData = record
+    Id: Integer;
+    NomeLivro: string;
+    Quantidade: Integer;
+  end;
+
+type
+  TUserData = record
+    Id: Integer;
+    Nome: string;
+    Usuario: string;
+    Email: string;
+    Status: Boolean;
+    Tipo: Integer;
+  end;
+
+type
+  TMovementData = record
+    Id: Integer;
+    UsuarioId: Integer;
+    NomeUsuario: string;
+    DataSaida: TDateTime;
+    DataPrevRetorno: TDateTime;
+    DataRetorno: TDateTime;
+    QtdLivros: Integer;
+    Observacao: string;
+    Multa: Float32;
+    Status: Integer;
+  end;
+
+type
+  TMovementController = class
+    class function GetAllMovements: TArray<TMovementData>;
+    class function IsBookAvailable(BookId: Integer): Boolean;
+    class function IsUserAvailable(UserId: Integer): string;
+    class procedure SaveMovement(var MovementData: TMovementData;
+      const SelectedBooks: TArray<TBookData>);
+    class procedure UpdateReceivedBook(AId: Integer);
+    class procedure DeleteMovementById(AId: Integer);
+    class function GetUsers: TArray<TUserData>;
+    class function GetBooks: TArray<TBookData>;
+    class function GetBookMoviment(AMovementID: Integer): TArray<TBookData>;
+    class procedure BlockUser(AId: Integer);
+  end;
+
+implementation
+
+uses Dm.Utils, LibrarySession;
+
+class procedure TMovementController.SaveMovement(var MovementData
+  : TMovementData; const SelectedBooks: TArray<TBookData>);
+var
+  LCon: TFDConnection;
+  LQry: TFDQuery;
+  LSql: string;
+  EmprestimoID: Integer;
+  i: Integer;
+begin
+  LCon := TDataUtils.CreateConnection;
+  LCon.Connected := True;
+  LQry := TFDQuery.Create(nil);
+  LQry.Connection := LCon;
+  try
+    LCon.StartTransaction;
+    try
+      // Salvar o registro na tabela Emprestimos
+      LSql := 'INSERT INTO Emprestimos (USUARIO_ID, EMP_DATA_SAIDA, EMP_DATA_PREVISAO_RETORNO, EMP_OBSERVACAO, EMP_USUARIO, EMP_MULTA, EMP_STATUS) ' +
+              'VALUES (:UsuarioId, :DataSaida, :DataDevolucao, :Observacao, :UsuarioCadastro, :Multa, :Status)';
+      LQry.SQL.Text := LSql;
+      LQry.ParamByName('UsuarioId').AsInteger := MovementData.UsuarioId;
+      LQry.ParamByName('DataSaida').AsDateTime := MovementData.DataSaida;
+      LQry.ParamByName('DataDevolucao').AsDateTime := MovementData.DataPrevRetorno;
+      LQry.ParamByName('Observacao').AsString := MovementData.Observacao;
+      LQry.ParamByName('Status').AsInteger := 1;
+      LQry.ParamByName('Multa').AsFloat := 0.0;
+      LQry.ParamByName('UsuarioCadastro').AsInteger := TLibrarySession.GetInstance.GetLoggedInUserID;
+      LQry.ExecSQL;
+
+      // Obter o ID do empréstimo inserido
+      EmprestimoID := LCon.GetLastAutoGenValue('');
+
+      // Salvar os livros emprestados na tabela LivrosEmprestados
+      LSql := 'INSERT INTO LivrosEmprestados (EMPRESTIMO_ID, LIVRO_ID) ' +
+              'VALUES (:EmprestimoId, :LivroId)';
+      LQry.SQL.Text := LSql;
+      for i := 0 to Length(SelectedBooks) - 1 do
+      begin
+        LQry.ParamByName('EmprestimoId').AsInteger := EmprestimoID;
+        LQry.ParamByName('LivroId').AsInteger := SelectedBooks[i].Id;
+        LQry.ExecSQL;
+      end;
+
+      LCon.Commit;
+    except
+      LCon.Rollback;
+      raise;
+    end;
+  finally
+    LQry.DisposeOf;
+    LCon.Connected := False;
+    LCon.DisposeOf;
+  end;
+end;
+
+class procedure TMovementController.UpdateReceivedBook(AId: Integer);
+var
+  LCon: TFDConnection;
+  LQry: TFDQuery;
+  DataRetorno: TDateTime;
+  Atraso: Boolean;
+begin
+  LCon := TDataUtils.CreateConnection;
+  LQry := TFDQuery.Create(nil);
+  try
+    LCon.Connected := True;
+    LQry.Connection := LCon;
+
+    LQry.SQL.Text :=
+      'SELECT EMP_DATA_RETORNO FROM Emprestimos WHERE EMP_ID = :Id';
+    LQry.ParamByName('Id').AsInteger := AId;
+    LQry.Open;
+
+    if not LQry.IsEmpty then
+    begin
+      DataRetorno := LQry.FieldByName('EMP_DATA_RETORNO').AsDateTime;
+      Atraso := DataRetorno < Now;
+
+      LQry.SQL.Text :=
+        'UPDATE Emprestimos ' +
+        'SET EMP_STATUS = 2, EMP_DATA_RETORNO = :pDataRetorno ' +
+        'WHERE EMP_ID = :Id';
+      LQry.ParamByName('pDataRetorno').AsDate := Now;
+      LQry.ParamByName('Id').AsInteger := AId;
+      LQry.ExecSQL;
+
+      if Atraso then
+      begin
+        LQry.SQL.Text :=
+          'UPDATE Usuarios ' +
+          'SET USU_ATIVO = 0, USU_DATA_INATIVO = :pDataBloq ' +
+          'WHERE USU_ID = (SELECT USUARIO_ID FROM Emprestimos WHERE EMP_ID = :Id)';
+        LQry.ParamByName('Id').AsInteger := AId;
+        LQry.ParamByName('pDataBloq').AsString := FormatDateTime('dd/mm/yyyy', Date);
+        LQry.ExecSQL;
+      end;
+    end;
+  finally
+    LQry.DisposeOf;
+    LCon.Connected := False;
+    LCon.DisposeOf;
+  end;
+end;
+
+class procedure TMovementController.BlockUser(AId: Integer);
+var
+  LCon: TFDConnection;
+  LQry: TFDQuery;
+begin
+  LCon := TDataUtils.CreateConnection;
+  LCon.Connected := True;
+  LQry := TFDQuery.Create(nil);
+  LQry.Connection := LCon;
+  try
+    LQry.SQL.Text := 'UPDATE Usuarios SET USU_ATIVO = 0, USU_DATA_INATIVO = :DataInativo WHERE USU_ID = :UsuarioID';
+    LQry.ParamByName('DataInativo').AsDateTime := Now;
+    LQry.ParamByName('UsuarioID').AsInteger := AId;
+    LQry.ExecSQL;
+  finally
+    LQry.DisposeOf;
+    LCon.Connected := False;
+    LCon.DisposeOf;
+  end;
+end;
+
+class procedure TMovementController.DeleteMovementById(AId: Integer);
+const
+  LDeleteEmprestimosSql = 'DELETE FROM Emprestimos WHERE EMP_ID = :Id';
+  LDeleteLivrosEmprestadosSql = 'DELETE FROM LivrosEmprestados WHERE EMPRESTIMO_ID = :Id';
+var
+  LCon: TFDConnection;
+  LQry: TFDQuery;
+begin
+  LCon := TDataUtils.CreateConnection;
+  LCon.Connected := True;
+  LQry := TFDQuery.Create(nil);
+  LQry.Connection := LCon;
+  try
+    LQry.SQL.Text := LDeleteLivrosEmprestadosSql;
+    LQry.ParamByName('Id').AsInteger := AId;
+    LQry.ExecSQL;
+
+    LQry.SQL.Text := LDeleteEmprestimosSql;
+    LQry.ParamByName('Id').AsInteger := AId;
+    LQry.ExecSQL;
+  finally
+    LQry.DisposeOf;
+    LCon.Connected := False;
+    LCon.DisposeOf;
+  end;
+end;
+
+class function TMovementController.GetUsers: TArray<TUserData>;
+const
+  LSql = 'SELECT * FROM Usuarios';
+var
+  LCon: TFDConnection;
+  LQry: TFDQuery;
+  LUser: TUserData;
+  LUsers: TArray<TUserData>;
+begin
+  LCon := TDataUtils.CreateConnection;
+  LCon.Connected := True;
+  LQry := TFDQuery.Create(nil);
+  LQry.Connection := LCon;
+  try
+    LQry.SQL.Text := LSql;
+    LQry.Open;
+    LQry.First;
+
+    while not LQry.Eof do
+    begin
+      LUser.Id := LQry.FieldByName('USU_ID').AsInteger;
+      LUser.Nome := LQry.FieldByName('USU_NOME').AsString;
+      LUser.Usuario := LQry.FieldByName('USU_LOGIN').AsString;
+      LUser.Email := LQry.FieldByName('USU_EMAIL').AsString;
+      LUser.Status := LQry.FieldByName('USU_ATIVO').AsBoolean;
+      LUser.Tipo := LQry.FieldByName('USU_TIPO_USUARIO').AsInteger;
+
+      LUsers := LUsers + [LUser];
+
+      LQry.Next;
+    end;
+  finally
+    LQry.Close;
+    LQry.DisposeOf;
+    LCon.Connected := False;
+    LCon.DisposeOf;
+  end;
+
+  Result := LUsers;
+end;
+
+class function TMovementController.GetAllMovements: TArray<TMovementData>;
+var
+  LCon: TFDConnection;
+  LQry: TFDQuery;
+  LSql: string;
+  Movements: TArray<TMovementData>;
+  Movement: TMovementData;
+  I: Integer;
+begin
+  LCon := TDataUtils.CreateConnection;
+  LCon.Connected := True;
+  LQry := TFDQuery.Create(nil);
+  LQry.Connection := LCon;
+  try
+    LSql := 'SELECT E.EMP_ID, ' +
+            '       E.USUARIO_ID, ' +
+            '       U.USU_NOME, ' +
+            '       E.EMP_DATA_SAIDA, ' +
+            '       E.EMP_DATA_PREVISAO_RETORNO, ' +
+            '       E.EMP_DATA_RETORNO, ' +
+            '       E.EMP_OBSERVACAO, ' +
+            '       CASE ' +
+            '           WHEN E.EMP_DATA_PREVISAO_RETORNO < DATE(''now'') THEN P.PAR_VALOR_MULTA * (JULIANDAY(DATE(''now'')) - JULIANDAY(E.EMP_DATA_PREVISAO_RETORNO)) ' +
+            '           ELSE 0 ' +
+            '       END AS EMP_MULTA, ' +
+            '       CASE ' +
+            '           WHEN E.EMP_DATA_PREVISAO_RETORNO < DATE(''now'') AND E.EMP_STATUS <> 2 THEN 3 ' +
+            '           ELSE E.EMP_STATUS ' +
+            '       END AS EMP_STATUS, ' +
+            '       (SELECT COUNT(*) FROM LivrosEmprestados LE WHERE LE.EMPRESTIMO_ID = E.EMP_ID) AS QTD_LIVROS ' +
+            'FROM Emprestimos E ' +
+            'JOIN Parametros P ON P.PAR_ID = 1 ' +
+            'JOIN Usuarios U ON E.USUARIO_ID = U.USU_ID';
+
+
+    with LQry do
+    begin
+      SQL.Text := LSql;
+      Open;
+      SetLength(Movements, RecordCount);
+
+      First;
+      I := 0;
+      while not Eof do
+      begin
+        Movement.Id := FieldByName('EMP_ID').AsInteger;
+        Movement.UsuarioId := FieldByName('USUARIO_ID').AsInteger;
+        Movement.NomeUsuario := FieldByName('USU_NOME').AsString;
+        Movement.DataSaida := FieldByName('EMP_DATA_SAIDA').AsDateTime;
+        Movement.DataPrevRetorno := FieldByName('EMP_DATA_PREVISAO_RETORNO').AsDateTime;
+        Movement.DataRetorno := FieldByName('EMP_DATA_RETORNO').AsDateTime;
+        Movement.DataRetorno := FieldByName('EMP_DATA_RETORNO').AsDateTime;
+        Movement.Observacao := FieldByName('EMP_OBSERVACAO').AsString;
+        Movement.QtdLivros := FieldByName('QTD_LIVROS').AsInteger;
+        Movement.Status := FieldByName('EMP_STATUS').AsInteger;
+        Movement.Multa := FieldByName('EMP_MULTA').AsFloat;
+
+        Movements[I] := Movement;
+
+        Next;
+        Inc(I);
+      end;
+    end;
+
+    Result := Movements;
+  finally
+    LQry.Close;
+    LQry.DisposeOf;
+    LCon.Connected := False;
+    LCon.DisposeOf;
+  end;
+end;
+
+class function TMovementController.IsBookAvailable(BookId: Integer): Boolean;
+var
+  LCon: TFDConnection;
+  LQry: TFDQuery;
+  LSql: string;
+begin
+  LCon := TDataUtils.CreateConnection;
+  LCon.Connected := True;
+  LQry := TFDQuery.Create(nil);
+  LQry.Connection := LCon;
+  try
+    LSql := 'SELECT COUNT(*) FROM Emprestimos WHERE LIVRO_ID = :BookId';
+
+    with LQry do
+    begin
+      SQL.Text := LSql;
+      ParamByName('BookId').AsInteger := BookId;
+      Open;
+      Result := Fields[0].AsInteger = 0;
+    end;
+  finally
+    LQry.Close;
+    LQry.DisposeOf;
+    LCon.Connected := False;
+    LCon.DisposeOf;
+  end;
+end;
+
+class function TMovementController.IsUserAvailable(UserId: Integer): string;
+var
+  LCon: TFDConnection;
+  LQry: TFDQuery;
+  LSql: string;
+begin
+  LCon := TDataUtils.CreateConnection;
+  LCon.Connected := True;
+  LQry := TFDQuery.Create(nil);
+  LQry.Connection := LCon;
+  try
+    LSql := ' SELECT USU_ID,'+
+            '        USU_ATIVO,'+
+            '        USU_DATA_INATIVO,'+
+            '        CASE'+
+            '            WHEN USU_ATIVO = 1 THEN "Disponivel"'+
+            '            WHEN USU_ATIVO = 0 THEN "Usuário bloqueado ate a data " || strftime(''%Y-%m-%d'', USU_DATA_INATIVO)'+
+            '        END AS Status'+
+            ' FROM Usuarios'+
+            ' WHERE USU_ID = :USU_ID';
+
+    with LQry do
+    begin
+      SQL.Text := LSql;
+      ParamByName('USU_ID').AsInteger := UserId;
+      Open;
+      Result :=LQry.FieldByName('Status').AsString;
+    end;
+  finally
+    LQry.Close;
+    LQry.DisposeOf;
+    LCon.Connected := False;
+    LCon.DisposeOf;
+  end;
+end;
+
+class function TMovementController.GetBookMoviment(AMovementId: Integer)
+  : TArray<TBookData>;
+var
+  LCon: TFDConnection;
+  LQry: TFDQuery;
+  LSql: string;
+  Books: TArray<TBookData>;
+  Book: TBookData;
+  I: Integer;
+begin
+  LCon := TDataUtils.CreateConnection;
+  LCon.Connected := True;
+  LQry := TFDQuery.Create(nil);
+  LQry.Connection := LCon;
+  try
+    LSql := 'SELECT LE.LIVRO_ID, L.LIV_NOME_LIVRO ' +
+            'FROM LivrosEmprestados LE ' +
+            'INNER JOIN Livros L ON LE.LIVRO_ID = L.LIV_ID ' +
+            'WHERE LE.EMPRESTIMO_ID = :MovementID';
+
+    LQry.SQL.Text := LSql;
+    LQry.ParamByName('MovementID').AsInteger := AMovementID;
+    LQry.Open;
+
+    SetLength(Books, LQry.RecordCount);
+
+    I := 0;
+    while not LQry.Eof do
+    begin
+      Book.Id := LQry.FieldByName('LIVRO_ID').AsInteger;
+      Book.NomeLivro := LQry.FieldByName('LIV_NOME_LIVRO').AsString;
+
+      Books[I] := Book;
+
+      LQry.Next;
+      Inc(I);
+    end;
+
+    Result := Books;
+  finally
+    LQry.Close;
+    LQry.DisposeOf;
+    LCon.Connected := False;
+    LCon.DisposeOf;
+  end;
+end;
+
+class function TMovementController.GetBooks: TArray<TBookData>;
+const
+  LSql = 'SELECT * FROM Livros';
+var
+  LCon: TFDConnection;
+  LQry: TFDQuery;
+begin
+  LCon := TDataUtils.CreateConnection;
+  LCon.Connected := True;
+  LQry := TFDQuery.Create(nil);
+  LQry.Connection := LCon;
+  try
+    LQry.SQL.Text := LSql;
+    LQry.Open;
+    LQry.First;
+    Result := [];
+    while not LQry.Eof do
+    begin
+      SetLength(Result, Length(Result) + 1);
+      Result[High(Result)].Id := LQry.FieldByName('LIV_ID').AsInteger;
+      Result[High(Result)].NomeLivro := LQry.FieldByName('LIV_NOME_LIVRO').AsString;
+      Result[High(Result)].Quantidade := LQry.FieldByName('LIV_QUANTIDADE').AsInteger;
+      LQry.Next;
+    end;
+  finally
+    LQry.DisposeOf;
+    LCon.Connected := False;
+    LCon.DisposeOf;
+  end;
+end;
+
+end.

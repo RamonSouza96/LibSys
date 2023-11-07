@@ -1,0 +1,27 @@
+unit Helpers.HelpsAll;
+
+interface
+
+uses
+  System.SysUtils;
+
+type
+  THelpsAll = class
+  private
+  public
+   class function GenerateSalt: string;
+  end;
+
+implementation
+
+{ THelpsAll }
+
+class function THelpsAll.GenerateSalt: string;
+var
+  GUID: TGUID;
+begin
+  CreateGUID(GUID);
+  Result := GUID.ToString().Replace('{', '').Replace('}', '').Replace('-', '');
+end;
+
+end.

@@ -1,0 +1,23 @@
+object FormWidgets: TFormWidgets
+  Left = 0
+  Top = 0
+  Caption = 'Form1'
+  ClientHeight = 480
+  ClientWidth = 640
+  FormFactor.Width = 320
+  FormFactor.Height = 480
+  FormFactor.Devices = [Desktop]
+  DesignerMasterStyle = 0
+  object SkSvgBackStatus: TSkSvg
+    Position.X = 16.000000000000000000
+    Position.Y = 8.000000000000000000
+    Size.Width = 137.000000000000000000
+    Size.Height = 50.000000000000000000
+    Size.PlatformDefault = False
+    Svg.OverrideColor = claWhite
+    Svg.Source = 
+      '<svg width="192" height="38" viewBox="0 0 192 38" fill="none" xm' +
+      'lns="http://www.w3.org/2000/svg">'#13#10'<rect width="192" height="38"' +
+      ' rx="19" fill="#E6E6E6"/>'#13#10'</svg>'
+  end
+end

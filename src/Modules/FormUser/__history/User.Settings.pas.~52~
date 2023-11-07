@@ -1,0 +1,294 @@
+﻿unit User.Settings;
+
+interface
+
+uses FMX.Forms, FMX.ListView, FMX.ListView.Appearances, FMX.Objects, FMX.Graphics,
+     FMX.StdCtrls, System.SysUtils, FMX.Controls, FMX.Edit, System.Classes, System.UITypes,
+     FMX.Dialogs, FMX.ListView.Types, System.Hash;
+
+type
+  TUser_Settings = class
+  Private
+   class procedure RefrashListView;
+   class procedure ClearFields;
+   class procedure SaveNewUser;
+   class procedure UpdateOldUser;
+  Public
+   class var iInputFocus : TObject;
+   class procedure NextInput;
+   class procedure OpenFormUser;
+   class procedure SaveOrUpdateUser;
+   class procedure CreateNewUser;
+   class procedure DeleteUser;
+   class procedure CheckStatus;
+   class procedure ClickItemListView(AItem: TListViewItem);
+   class procedure ClickCategoria(ARectangle: TObject);
+   class procedure FormUserClose;
+  end;
+
+implementation
+
+{ TMain_Settings }
+
+uses User.View, User.Controller, Helpers.HelpsAll, Main.View;
+
+class procedure TUser_Settings.CheckStatus;
+begin
+  if FormUser.CbxAtivo.IsPressed then
+    FormUser.CbxInativo.IsChecked := False
+  else if FormUser.CbxInativo.IsPressed then
+    FormUser.CbxAtivo.IsChecked := False;
+end;
+
+class procedure TUser_Settings.ClearFields;
+begin
+ FormUser.EdtCadNome.Text := EmptyStr;
+ FormUser.EdtCadConta.Text := EmptyStr;
+ FormUser.EdtCadEmail.Text := EmptyStr;
+ FormUser.EdtCadSenha.Text := EmptyStr;
+ FormUser.CbxAtivo.IsChecked := True;
+ FormUser.CbxInativo.IsChecked := False;
+ ClickCategoria(FormUser.RectUserAluno);
+ FormUser.LvUser.ItemIndex := -1;
+ FormUser.EdtCadNome.SetFocus;
+end;
+
+class procedure TUser_Settings.ClickCategoria(ARectangle: TObject);
+begin
+ TRectangle(FormUser.ShadowIndcator.Parent).Stroke.Kind := TBrushKind.None;
+ FormUser.ShadowIndcator.Parent := TRectangle(ARectangle);
+ TRectangle(ARectangle).Stroke.Kind := TBrushKind.Solid;
+ TRectangle(ARectangle).Stroke.Color := $FF011F97;
+end;
+
+class procedure TUser_Settings.ClickItemListView(AItem: TListViewItem);
+var
+  LDataSet: TUserData;
+begin
+  LDataSet := TUserController.GetUserById(AItem.Tag);
+  FormUser.EdtCadNome.Text := LDataSet.Nome;
+  FormUser.EdtCadConta.Text := LDataSet.Usuario;
+  FormUser.EdtCadEmail.Text := LDataSet.Email;
+
+  if LDataSet.Tipo = 1 then
+    TUser_Settings.ClickCategoria(FormUser.RectUserOperador)
+  else if LDataSet.Tipo = 2 then
+    TUser_Settings.ClickCategoria(FormUser.RectUserAdm)
+  else if LDataSet.Tipo = 3 then
+    TUser_Settings.ClickCategoria(FormUser.RectUserAluno);
+
+  if LDataSet.Status = True then
+  begin
+   FormUser.CbxAtivo.IsChecked := True;
+   FormUser.CbxInativo.IsChecked := False;
+  end
+  else
+  begin
+   FormUser.CbxAtivo.IsChecked := False;
+   FormUser.CbxInativo.IsChecked := True;
+  end;
+end;
+
+class procedure TUser_Settings.CreateNewUser;
+begin
+  TUser_Settings.ClearFields;
+  FormUser.EdtCadNome.SetFocus;
+end;
+
+class procedure TUser_Settings.DeleteUser;
+var
+  SelectedItem: TListItem;
+begin
+  SelectedItem := FormUser.LvUser.Selected;
+  if FormUser.LvUser.Selected <> nil then
+  begin
+   TUserController.DeleteUser(SelectedItem.Tag);
+  end;
+ ClearFields;
+ RefrashListView;
+ ShowMessage('Usúario deletado com sucesso!');
+end;
+
+class procedure TUser_Settings.FormUserClose;
+begin
+ FormMain.TabCon.GotoVisibleTab(0);
+ FormUser.RectUserBackgraund.Parent := FormUser;
+ TUser_Settings.ClearFields;
+ FormUser.Close;
+end;
+
+class procedure TUser_Settings.NextInput;
+begin
+  if TControl(TEdit(iInputFocus)).Name = 'EdtCadNome' then
+  begin
+    FormUser.EdtCadConta.SetFocus;
+    Exit;
+  end;
+
+  if TControl(TEdit(iInputFocus)).Name = 'EdtCadConta' then
+  begin
+    FormUser.EdtCadSenha.SetFocus;
+    Exit;
+  end;
+
+  if TControl(TEdit(iInputFocus)).Name = 'EdtCadSenha' then
+  begin
+    FormUser.EdtCadEmail.SetFocus;
+    Exit;
+  end;
+end;
+
+class procedure TUser_Settings.OpenFormUser;
+begin
+  if not Assigned(FormUser) then
+    Application.CreateForm(TFormUser, FormUser);
+  FormUser.RectUserBackgraund.Parent := FormMain.TabForm2;
+  FormMain.TabCon.GotoVisibleTab(1);
+  TUser_Settings.RefrashListView;
+end;
+
+class procedure TUser_Settings.RefrashListView;
+var
+  LDataSet: TUserData;
+  LItem: TListViewItem;
+begin
+  FormUser.LvUser.Items.Clear;
+  LDataSet := TUserController.GetUserById(0);
+  if Length(LDataSet.UserList) > 0 then
+  begin
+    for var I := 0 to High(LDataSet.UserList) do
+    begin
+      LItem := FormUser.LvUser.Items.Add;
+      LItem.Tag :=  LDataSet.UserList[I].Id;
+      LItem.Text := LDataSet.UserList[I].Nome;
+      LItem.Detail := LDataSet.UserList[I].Email;
+      LItem.Objects.TextObject.Font.Family := 'Poppins';
+      LItem.Objects.TextObject.Font.Size := 15;
+    end;
+  end;
+end;
+
+class procedure TUser_Settings.SaveOrUpdateUser;
+var
+  SelectedItem: TListItem;
+  Nome: string;
+  Conta: string;
+begin
+  SelectedItem := FormUser.LvUser.Selected;
+  Nome := FormUser.EdtCadNome.Text;
+  Conta := FormUser.EdtCadConta.Text;
+
+  if SelectedItem = nil then
+  begin
+    // Validação dos campos obrigatórios
+    if TUserController.IsLoginExists(FormUser.EdtCadConta.Text) then
+    begin
+     ShowMessage('Nome de usuário já existente!');
+     Exit;
+    end;
+
+    if (Nome = '') or (Conta = '') or (FormUser.EdtCadSenha.Text = '') then
+    begin
+      ShowMessage('Os campos Nome, Login e Senha são obrigatórios.');
+      Exit;
+    end;
+
+    TUser_Settings.SaveNewUser;
+  end
+  else
+  begin
+    if (Nome = '') or (Conta = '') then
+    begin
+      ShowMessage('Os campos Nome e Login são obrigatórios.');
+      Exit;
+    end;
+
+    TUser_Settings.UpdateOldUser;
+  end;
+
+  TUser_Settings.RefrashListView;
+end;
+
+class procedure TUser_Settings.SaveNewUser;
+var
+  UserData: TUserData;
+  LSalt: string;
+  LHashedPassword: string;
+begin
+  try
+    UserData.Id := 0;
+    UserData.Nome := FormUser.EdtCadNome.Text;
+    UserData.Usuario := FormUser.EdtCadConta.Text;
+    UserData.Email := FormUser.EdtCadEmail.Text;
+    UserData.Status := FormUser.CbxAtivo.IsChecked;
+    UserData.Salt := THelpsAll.GenerateSalt;
+
+    LSalt := THelpsAll.GenerateSalt;
+    LHashedPassword := THashSHA2.GetHMAC(FormUser.EdtCadSenha.Text, LSalt, THashSHA2.TSHA2Version.SHA256);
+    UserData.Senha := LHashedPassword;
+    UserData.Salt := LSalt;
+
+    if FormUser.ShadowIndcator.Parent = FormUser.RectUserOperador then
+      UserData.Tipo := 1
+    else if FormUser.ShadowIndcator.Parent = FormUser.RectUserAdm then
+      UserData.Tipo := 2
+    else if FormUser.ShadowIndcator.Parent = FormUser.RectUserAluno then
+      UserData.Tipo := 3;
+
+    TUserController.SaveUser(UserData);
+    ClearFields;
+    ShowMessage('Usuário salvo sucesso!');
+  except
+    on E: Exception do
+    begin
+      ShowMessage('Erro ao salvar usuário: ' + E.Message);
+    end;
+  end;
+end;
+
+class procedure TUser_Settings.UpdateOldUser;
+var
+  SelectedItem: TListItem;
+  UserData: TUserData;
+  NewSalt, NewHashedPassword: string;
+begin
+  try
+    SelectedItem := FormUser.LvUser.Selected;
+
+    if SelectedItem = nil then
+      Exit; // Não há item selecionado
+
+    UserData.Id := SelectedItem.Tag;
+    UserData.Nome := FormUser.EdtCadNome.Text;
+    UserData.Usuario := FormUser.EdtCadConta.Text;
+    UserData.Email := FormUser.EdtCadEmail.Text;
+    UserData.Status := FormUser.CbxAtivo.IsChecked;
+
+    if FormUser.ShadowIndcator.Parent = FormUser.RectUserOperador then
+      UserData.Tipo := 1
+    else if FormUser.ShadowIndcator.Parent = FormUser.RectUserAdm then
+      UserData.Tipo := 2
+    else if FormUser.ShadowIndcator.Parent = FormUser.RectUserAluno then
+      UserData.Tipo := 3;
+
+    // Verifica se o campo de senha foi preenchido
+    if FormUser.EdtCadSenha.Text <> '' then
+    begin
+      NewSalt := THelpsAll.GenerateSalt;
+      NewHashedPassword := THashSHA2.GetHMAC(FormUser.EdtCadSenha.Text, NewSalt, THashSHA2.TSHA2Version.SHA256);
+      UserData.Senha := NewHashedPassword;
+      UserData.Salt := NewSalt;
+    end;
+
+    TUserController.UpdateUser(UserData);
+
+    ShowMessage('Usuário atualizado com sucesso!');
+  except
+    on E: Exception do
+    begin
+      ShowMessage('Erro ao atualizar usuário: ' + E.Message);
+    end;
+  end;
+end;
+
+End.

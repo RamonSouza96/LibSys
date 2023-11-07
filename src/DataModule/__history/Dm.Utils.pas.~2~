@@ -1,0 +1,91 @@
+unit Dm.Utils;
+
+interface
+
+uses
+ FireDAC.Comp.Client,System.SysUtils,FMX.Dialogs,System.IOUtils,FireDAC.Comp.DataSet;
+
+ type
+  TDataUtils = class
+  private
+  public
+   class function  CreateQuery(AConnection: TFDConnection; SQL: string): TFDQuery;
+   class function  CreateConnection: TFDConnection;
+   class function  GetPathData: string;
+  end;
+
+implementation
+
+class function TDataUtils.CreateConnection: TFDConnection;
+var
+  FDCon: TFDConnection;
+  LPath: string;
+begin
+  // Criar a conexão com o banco de dados
+  FDCon := TFDConnection.Create(nil);
+  try
+    // Obter o caminho para o banco de dados
+    LPath := TPath.Combine(TPath.GetDocumentsPath, 'Data.db');
+    if LPath = '' then
+      raise Exception.Create('Não foi possível obter o caminho para o banco de dados');
+
+    // Configurar os parâmetros de conexão
+    with FDCon do
+    begin
+      Params.Add('LockingMode=Normal');
+      Params.Add('DriverID=SQLite');
+      Params.Add('SharedCache=False');
+      LoginPrompt := False;
+      Params.Values['Database'] := LPath;
+    end;
+
+    // Retornar a conexão criada
+    Result := FDCon;
+  except
+    on E: Exception do
+    begin
+      // Liberar os recursos alocados em caso de erro
+      FDCon.Free;
+      raise; // Relançar a exceção para tratamento posterior
+    end;
+  end;
+end;
+
+class function TDataUtils.CreateQuery(AConnection: TFDConnection; SQL: string): TFDQuery;
+begin
+  Result := TFDQuery.Create(nil);
+  try
+    Result.Connection := AConnection;
+    Result.SQL.Text := SQL;
+    Result.Open;
+  except
+    Result.Free;
+    raise;
+  end;
+end;
+
+class function TDataUtils.GetPathData: string;
+const
+  DataDir = '\Data';
+var
+  BaseDir: string;
+begin
+  BaseDir := TPath.GetDocumentsPath;
+  try
+    // Verificar se o diretório de dados existe e criá-lo se necessário
+    if not DirectoryExists(BaseDir + DataDir) then
+      ForceDirectories(BaseDir + DataDir);
+
+    // Retornar o caminho para o arquivo do banco de dados
+    Result := BaseDir + DataDir;
+  except
+    on E: Exception do
+    begin
+      // Tratar o erro de acordo com sua necessidade
+      ShowMessage('Ocorreu um erro ao obter o caminho para o banco de dados: ' + E.Message);
+      Result := '';
+    end;
+  end;
+end;
+
+end.

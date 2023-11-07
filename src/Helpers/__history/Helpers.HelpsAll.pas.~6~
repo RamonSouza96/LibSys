@@ -1,0 +1,68 @@
+unit Helpers.HelpsAll;
+
+interface
+
+uses
+  System.SysUtils, System.Classes, FMX.Forms, FMX.Objects, System.UIConsts;
+
+type
+  THelpsAll = class
+  private
+  public
+   class function GenerateSalt: string;
+   class procedure EffectTouch(ARect : TRectangle; AType : Integer);
+   class procedure OpenForm(AClasseForm: TComponentClass; var AForm);
+  end;
+
+implementation
+
+{ THelpsAll }
+
+class procedure THelpsAll.OpenForm(AClasseForm: TComponentClass; var AForm);
+begin
+  try
+    if Not Assigned(TForm(AForm)) then
+    begin
+     Application.CreateForm(AClasseForm, AForm);
+    end;
+  finally
+    TForm(AForm).Show;
+  end;
+end;
+
+class procedure THelpsAll.EffectTouch(ARect: TRectangle; AType: Integer);
+begin
+  TThread.Queue(nil,
+  procedure
+  begin
+     case AType of
+    0:begin
+       ARect.TagString  := ColorToString(ARect.Fill.Color);
+       ARect.Fill.Color := $FF016CB5; { preciona }
+       ARect.Tag:=1;
+      end;
+
+    1:begin
+        if ARect.TagString = '$FFFFFFFF' then
+        begin
+         ARect.Fill.Color := $FFFFFFFF;
+        end
+        else
+        begin
+         ARect.Fill.Color := $FF023390; { solta }
+        end;
+        ARect.Tag:=0;
+      end;
+    end;
+  end);
+end;
+
+class function THelpsAll.GenerateSalt: string;
+var
+  GUID: TGUID;
+begin
+  CreateGUID(GUID);
+  Result := GUID.ToString().Replace('{', '').Replace('}', '').Replace('-', '');
+end;
+
+end.

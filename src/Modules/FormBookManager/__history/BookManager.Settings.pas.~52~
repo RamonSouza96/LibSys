@@ -1,0 +1,283 @@
+﻿unit BookManager.Settings;
+
+interface
+
+uses
+  FMX.Forms, System.SysUtils, FMX.ListView.Appearances, FMX.ListView.Types,
+  FMX.Dialogs, System.Classes, FMX.ListBox,System.RegularExpressions,
+  FMX.Controls, FMX.Edit;
+
+type
+  TBookManager_Settings = class
+  private
+    class procedure ClearFields;
+    class procedure RefreshListView;
+    class procedure SaveNewBook;
+    class procedure UpdateOldBook;
+    class procedure PopulateBookGenresComboBox(CbxLivroCategoria: TComboBox);
+  public
+    class var iInputFocus : TObject;
+    class procedure OpenFormBookManager;
+    class procedure CreateNewBook;
+    class procedure SaveOrUpdateBook;
+    class procedure NextInput;
+    class procedure DeleteBook;
+    class procedure ListViewItemClick(AItem: TListViewItem);
+    class procedure FormBookManagerClose;
+  end;
+
+implementation
+
+{ TBookManager_Settings }
+
+uses
+  BookManager.View, Main.View, BookManager.Controller, LibrarySession;
+
+class procedure TBookManager_Settings.ClearFields;
+begin
+  FormBookManager.CbxLivroCategoria.ItemIndex := -1;
+  FormBookManager.EdtCategoria.Text := '';
+  FormBookManager.EdtLivroNome.Text := '';
+  FormBookManager.EdtLivroAutor.Text := '';
+  FormBookManager.EdtLivroAno.Text := '';
+  FormBookManager.EdtLivroEditora.Text := '';
+  FormBookManager.EdtLivroLocalizacao.Text := '';
+  FormBookManager.EdtLivroQuantidade.Text := '';
+  FormBookManager.EdtLivroNome.SetFocus;
+  FormBookManager.EdtLivroAno.Visible := True;
+  FormBookManager.DateEditLivro.Visible := False;
+  FormBookManager.LvLivros.ItemIndex := -1;
+end;
+
+class procedure TBookManager_Settings.ListViewItemClick(AItem: TListViewItem);
+var
+  LBookData: TBookData;
+  LCategoryData: TCategoryData;
+begin
+  LBookData := TBookManagerController.GetBookById(AItem.Tag);
+  LCategoryData := TBookManagerController.GetCategoryById(LBookData.Categoria);
+  FormBookManager.CbxLivroCategoria.ItemIndex := LCategoryData.Id;
+  FormBookManager.EdtCategoria.Text := LCategoryData.Nome;
+  FormBookManager.SkLblDescCategoria.Text := LCategoryData.Descricao;
+  FormBookManager.EdtLivroNome.Text := LBookData.NomeLivro;
+  FormBookManager.EdtLivroAutor.Text := LBookData.NomeAutor;
+  FormBookManager.EdtLivroAno.Text := DateToStr(LBookData.DataPublicacao);
+  FormBookManager.EdtLivroEditora.Text := LBookData.NomeEditora;
+  FormBookManager.EdtLivroLocalizacao.Text := LBookData.Localizacao;
+  FormBookManager.EdtLivroQuantidade.Text := IntToStr(LBookData.Quantidade);
+
+  // Restante dos campos de edição
+  FormBookManager.EdtLivroAno.Visible := True;
+  FormBookManager.DateEditLivro.Visible := False;
+end;
+
+
+class procedure TBookManager_Settings.CreateNewBook;
+begin
+  TBookManager_Settings.ClearFields;
+  FormBookManager.EdtLivroNome.SetFocus;
+end;
+
+class procedure TBookManager_Settings.DeleteBook;
+var
+  LSelectedItem: TListItem;
+begin
+  LSelectedItem := FormBookManager.LvLivros.Selected;
+  if FormBookManager.LvLivros.Selected <> nil then
+  begin
+   TBookManagerController.DeleteBookbyId(LSelectedItem.Tag);
+  end;
+ ClearFields;
+ RefreshListView;
+ ShowMessage('Livro deletado com sucesso!');
+end;
+
+class procedure TBookManager_Settings.FormBookManagerClose;
+begin
+ FormMain.TabCon.GotoVisibleTab(0);
+ FormBookManager.RectBookMBackgraund.Parent := FormBookManager;
+ ClearFields;
+ FormBookManager.Close;
+end;
+
+class procedure TBookManager_Settings.OpenFormBookManager;
+begin
+ if not Assigned(FormBookManager) then
+   Application.CreateForm(TFormBookManager, FormBookManager);
+
+  FormBookManager.RectBookMBackgraund.Parent := FormMain.TabForm2;
+  PopulateBookGenresComboBox(FormBookManager.CbxLivroCategoria);
+  TBookManager_Settings.RefreshListView;
+  FormMain.TabCon.GotoVisibleTab(1);
+  TBookManager_Settings.iInputFocus := FormBookManager.EdtLivroNome;
+end;
+
+class procedure TBookManager_Settings.RefreshListView;
+var
+  LBookList: TArray<TBookData>;
+  LItem: TListViewItem;
+begin
+  FormBookManager.LvLivros.Items.Clear;
+  LBookList := TBookManagerController.GetBookList;
+
+  if Length(LBookList) > 0 then
+  begin
+    for var I := 0 to High(LBookList) do
+    begin
+      LItem := FormBookManager.LvLivros.Items.Add;
+      LItem.Tag := LBookList[I].Id;
+      LItem.Text := LBookList[I].NomeLivro;
+      LItem.Detail := LBookList[I].NomeAutor;
+      LItem.Objects.TextObject.Font.Family := 'Poppins';
+      LItem.Objects.TextObject.Font.Size := 15;
+    end;
+  end;
+end;
+
+class procedure TBookManager_Settings.SaveNewBook;
+var
+  LBookData: TBookData;
+begin
+  try
+    LBookData.Id := 0;
+    LBookData.NomeLivro := FormBookManager.EdtLivroNome.Text;
+    LBookData.NomeAutor := FormBookManager.EdtLivroAutor.Text;
+    LBookData.NomeEditora := FormBookManager.EdtLivroEditora.Text;
+    LBookData.DataPublicacao := FormBookManager.DateEditLivro.Date;
+    LBookData.Localizacao := FormBookManager.EdtLivroLocalizacao.Text;
+    LBookData.Quantidade :=
+      StrToIntDef(FormBookManager.EdtLivroQuantidade.Text, 0);
+    LBookData.Categoria := FormBookManager.CbxLivroCategoria.ListItems
+      [FormBookManager.CbxLivroCategoria.ItemIndex].Tag;
+    LBookData.Usuario := TLibrarySession.GetInstance.GetLoggedInUserID;
+    TBookManagerController.SaveBook(LBookData);
+
+    ClearFields;
+    ShowMessage('Livro salvo com sucesso!');
+  except
+    on E: Exception do
+    begin
+      ShowMessage('Erro ao salvar livro: ' + E.Message);
+    end;
+  end;
+end;
+
+class procedure TBookManager_Settings.SaveOrUpdateBook;
+var
+  LSelectedItem: TListItem;
+  LNomeLivro: string;
+  LNomeAutor: string;
+begin
+  LSelectedItem := FormBookManager.LvLivros.Selected;
+
+  // Validação dos campos obrigatórios
+  LNomeLivro := FormBookManager.EdtLivroNome.Text;
+  LNomeAutor := FormBookManager.EdtLivroAutor.Text;
+
+  if (LNomeLivro = '') or (LNomeAutor = '') then
+  begin
+   ShowMessage('Os campos Nome do Livro e Nome do Autor são obrigatórios.');
+   Exit;
+  end;
+
+  if FormBookManager.CbxLivroCategoria.ItemIndex = -1 then
+  begin
+   ShowMessage('A Categoria do livro e obrigatório!');
+   Exit;
+  end;
+
+  if LSelectedItem = nil then
+  begin
+
+    if TBookManagerController.IsBookExists(LNomeLivro) then
+    begin
+     ShowMessage('O livro "' + LNomeLivro + '" já existe na base de dados!');
+     Exit;
+    end;
+
+    TBookManager_Settings.SaveNewBook;
+  end
+  else
+  begin
+   TBookManager_Settings.UpdateOldBook;
+  end;
+
+  TBookManager_Settings.RefreshListView;
+end;
+
+class procedure TBookManager_Settings.UpdateOldBook;
+var
+  LSelectedItem: TListItem;
+  LBookData: TBookData;
+begin
+  try
+    LSelectedItem := FormBookManager.LvLivros.Selected;
+
+    if LSelectedItem = nil then
+      Exit; // Não há item selecionado
+
+    LBookData.Id := LSelectedItem.Tag;
+    LBookData.NomeLivro := FormBookManager.EdtLivroNome.Text;
+    LBookData.NomeAutor := FormBookManager.EdtLivroAutor.Text;
+    LBookData.NomeEditora := FormBookManager.EdtLivroEditora.Text;
+    LBookData.DataPublicacao := FormBookManager.DateEditLivro.Date;
+    LBookData.Localizacao := FormBookManager.EdtLivroLocalizacao.Text;
+    LBookData.Quantidade := StrToIntDef(FormBookManager.EdtLivroQuantidade.Text, 0);
+    LBookData.Categoria := FormBookManager.CbxLivroCategoria.ListItems
+      [FormBookManager.CbxLivroCategoria.ItemIndex].Tag;
+    TBookManagerController.UpdateBook(LBookData);
+
+    ShowMessage('Livro atualizado com sucesso!');
+  except
+    on E: Exception do
+    begin
+      ShowMessage('Erro ao atualizar livro: ' + E.Message);
+    end;
+  end;
+end;
+
+class procedure TBookManager_Settings.PopulateBookGenresComboBox(CbxLivroCategoria: TComboBox);
+var
+  LGenres: TArray<TBookGenre>;
+  LGenre: TBookGenre;
+  I: Integer;
+begin
+  CbxLivroCategoria.Items.Clear;
+  LGenres := TBookManagerController.GetAllBookGenres;
+
+  for LGenre in LGenres do
+  begin
+    I := CbxLivroCategoria.Items.AddObject(LGenre.Nome, TObject(LGenre.ID));
+    CbxLivroCategoria.ListItems[I].TagString := LGenre.Descricao;
+    CbxLivroCategoria.ListItems[I].Tag := LGenre.ID;
+  end;
+end;
+
+class procedure TBookManager_Settings.NextInput;
+begin
+  if TControl(iInputFocus).Name = 'EdtLivroNome' then
+  begin
+    FormBookManager.EdtLivroAutor.SetFocus;
+    Exit;
+  end;
+
+  if TControl(iInputFocus).Name = 'EdtLivroAutor' then
+  begin
+    FormBookManager.EdtLivroEditora.SetFocus;
+    Exit;
+  end;
+
+  if TControl(iInputFocus).Name = 'EdtLivroEditora' then
+  begin
+    FormBookManager.EdtLivroLocalizacao.SetFocus;
+    Exit;
+  end;
+
+  if TControl(iInputFocus).Name = 'EdtLivroLocalizacao' then
+  begin
+    FormBookManager.EdtLivroQuantidade.SetFocus;
+    Exit;
+  end;
+end;
+
+end.

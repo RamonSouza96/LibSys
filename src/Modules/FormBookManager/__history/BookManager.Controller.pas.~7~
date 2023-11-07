@@ -1,0 +1,324 @@
+﻿unit BookManager.Controller;
+
+interface
+
+uses
+  FireDAC.Comp.Client, System.SysUtils, System.Classes, Data.DB, FMX.Types, FireDAC.stan.Param,
+  FireDAC.Comp.DataSet, FireDAC.Stan.Def, FireDAC.Phys.SQLite, FireDAC.Phys.SQLiteDef, System.Types,
+  System.Generics.Collections, FMX.Dialogs, System.TypInfo, System.Rtti;
+
+type
+  TBookGenre = record
+    ID: Integer;
+    Nome: string;
+    Descricao: string;
+  end;
+
+type
+  TBookData = record
+    Id: Integer;
+    NomeLivro: string;
+    NomeAutor: string;
+    NomeEditora: string;
+    DataPublicacao: TDate;
+    Localizacao: string;
+    Quantidade: Integer;
+    Categoria: Integer;
+    DataCadastro: TDateTime;
+    Usuario: Integer;
+  end;
+
+  TBookManagerController = class
+  public
+    class function GetBookList: TArray<TBookData>;
+    class function GetBookById(AId: Integer): TBookData;
+    class procedure SaveBook(var BookData: TBookData);
+    class procedure UpdateBook(var BookData: TBookData);
+    class function GetAllBookGenres: TArray<TBookGenre>;
+    class procedure DeleteBookbyId(AId: Integer);
+  end;
+
+implementation
+
+uses
+  Dm.Utils;
+
+{ TBookManagerController }
+
+
+class function TBookManagerController.GetAllBookGenres: TArray<TBookGenre>;
+var
+  LCon: TFDConnection;
+  LQry: TFDQuery;
+begin
+  LCon := TDataUtils.CreateConnection;
+  LCon.Connected := True;
+  LQry := TFDQuery.Create(nil);
+  LQry.Connection := LCon;
+  try
+    LQry.SQL.Text := 'SELECT * FROM GenerosLivro';
+    LQry.Open;
+
+    if not LQry.IsEmpty then
+    begin
+      LQry.First;
+      while not LQry.Eof do
+      begin
+        SetLength(Result, Length(Result) + 1);
+        Result[High(Result)].ID := LQry.FieldByName('ID').AsInteger;
+        Result[High(Result)].Nome := LQry.FieldByName('Nome').AsString;
+        Result[High(Result)].Descricao := LQry.FieldByName('Descricao').AsString;
+        LQry.Next;
+      end;
+    end;
+  finally
+    LQry.DisposeOf;
+    LCon.Connected := False;
+    LCon.DisposeOf;
+  end;
+end;
+
+class function TBookManagerController.GetBookList: TArray<TBookData>;
+const
+  LSql =
+    'SELECT ' +
+    '  LIV_ID, ' +
+    '  LIV_NOME_LIVRO, ' +
+    '  LIV_NOME_AUTOR, ' +
+    '  LIV_NOME_EDITORA, ' +
+    '  LIV_DATA_PUBLICACAO, ' +
+    '  LIV_LOCALIZACAO, ' +
+    '  LIV_QUANTIDADE, ' +
+    '  LIV_DATA_CADASTRO, ' +
+    '  LIV_USUARIO ' +
+    'FROM ' +
+    '  Livros';
+var
+  LResultData: TArray<TBookData>;
+  LQry: TFDQuery;
+  LCon: TFDConnection;
+  BookData: TBookData;
+begin
+  LCon := TDataUtils.CreateConnection;
+  LCon.Connected := True;
+  LQry := TFDQuery.Create(nil);
+  LQry.Connection := LCon;
+  try
+    LQry.SQL.Text := LSql;
+    LQry.Open;
+
+    if not LQry.IsEmpty then
+    begin
+      LQry.First;
+      SetLength(LResultData, LQry.RecordCount);
+      for var I := 0 to LQry.RecordCount - 1 do
+      begin
+        BookData.Id := LQry.FieldByName('LIV_ID').AsInteger;
+        BookData.NomeLivro := LQry.FieldByName('LIV_NOME_LIVRO').AsString;
+        BookData.NomeAutor := LQry.FieldByName('LIV_NOME_AUTOR').AsString;
+        BookData.NomeEditora := LQry.FieldByName('LIV_NOME_EDITORA').AsString;
+        BookData.DataPublicacao := LQry.FieldByName('LIV_DATA_PUBLICACAO').AsDateTime;
+        BookData.Localizacao := LQry.FieldByName('LIV_LOCALIZACAO').AsString;
+        BookData.Categoria := LQry.FieldByName('LIV_CATEGORIA').AsInteger;
+        BookData.Quantidade := LQry.FieldByName('LIV_QUANTIDADE').AsInteger;
+        BookData.DataCadastro := LQry.FieldByName('LIV_DATA_CADASTRO').AsDateTime;
+        BookData.Usuario := LQry.FieldByName('LIV_USUARIO').AsInteger;
+
+        LResultData[I] := BookData;
+
+        LQry.Next;
+      end;
+    end;
+  finally
+    LQry.Close;
+    LQry.DisposeOf;
+    LCon.Connected := False;
+    LCon.DisposeOf;
+  end;
+
+  Result := LResultData;
+end;
+
+class function TBookManagerController.GetBookById(AId: Integer): TBookData;
+const
+  LSql =
+    'SELECT ' +
+    '  LIV_ID, ' +
+    '  LIV_NOME_LIVRO, ' +
+    '  LIV_NOME_AUTOR, ' +
+    '  LIV_NOME_EDITORA, ' +
+    '  LIV_DATA_PUBLICACAO, ' +
+    '  LIV_LOCALIZACAO, ' +
+    '  LIV_QUANTIDADE, ' +
+    '  LIV_DATA_CADASTRO, ' +
+    '  LIV_USUARIO ' +
+    'FROM ' +
+    '  Livros ' +
+    'WHERE ' +
+    '  LIV_ID = :Id';
+var
+  LQry: TFDQuery;
+  LCon: TFDConnection;
+  BookData: TBookData;
+begin
+  LCon := TDataUtils.CreateConnection;
+  LCon.Connected := True;
+  LQry := TFDQuery.Create(nil);
+  LQry.Connection := LCon;
+  try
+    LQry.SQL.Text := LSql;
+    LQry.ParamByName('Id').AsInteger := AId;
+    LQry.Open;
+
+    if not LQry.IsEmpty then
+    begin
+      BookData.Id := LQry.FieldByName('LIV_ID').AsInteger;
+      BookData.NomeLivro := LQry.FieldByName('LIV_NOME_LIVRO').AsString;
+      BookData.NomeAutor := LQry.FieldByName('LIV_NOME_AUTOR').AsString;
+      BookData.NomeEditora := LQry.FieldByName('LIV_NOME_EDITORA').AsString;
+      BookData.DataPublicacao := LQry.FieldByName('LIV_DATA_PUBLICACAO').AsDateTime;
+      BookData.Localizacao := LQry.FieldByName('LIV_LOCALIZACAO').AsString;
+      BookData.Quantidade := LQry.FieldByName('LIV_QUANTIDADE').AsInteger;
+      BookData.DataCadastro := LQry.FieldByName('LIV_DATA_CADASTRO').AsDateTime;
+      BookData.Usuario := LQry.FieldByName('LIV_USUARIO').AsInteger;
+    end;
+  finally
+    LQry.Close;
+    LQry.DisposeOf;
+    LCon.Connected := False;
+    LCon.DisposeOf;
+  end;
+
+  Result := BookData;
+end;
+
+class procedure TBookManagerController.SaveBook(var BookData: TBookData);
+const
+  LSql =
+    'INSERT INTO Livros (' +
+    '  LIV_NOME_LIVRO, ' +
+    '  LIV_NOME_AUTOR, ' +
+    '  LIV_NOME_EDITORA, ' +
+    '  LIV_DATA_PUBLICACAO, ' +
+    '  LIV_LOCALIZACAO, ' +
+    '  LIV_QUANTIDADE, ' +
+    '  LIV_DATA_CADASTRO, ' +
+    '  LIV_USUARIO ' +
+    ') VALUES (' +
+    '  :NomeLivro, ' +
+    '  :NomeAutor, ' +
+    '  :NomeEditora, ' +
+    '  :DataPublicacao, ' +
+    '  :Localizacao, ' +
+    '  :Quantidade, ' +
+    '  :DataCadastro, ' +
+    '  :Usuario ' +
+    ')';
+var
+  LCon: TFDConnection;
+  LQry: TFDQuery;
+begin
+  LCon := TDataUtils.CreateConnection;
+  LCon.Connected := True;
+  LQry := TFDQuery.Create(nil);
+  LQry.Connection := LCon;
+  try
+    LQry.SQL.Text := LSql;
+    LQry.ParamByName('NomeLivro').AsString := BookData.NomeLivro;
+    LQry.ParamByName('NomeAutor').AsString := BookData.NomeAutor;
+    LQry.ParamByName('NomeEditora').AsString := BookData.NomeEditora;
+    LQry.ParamByName('DataPublicacao').AsDate := BookData.DataPublicacao;
+    LQry.ParamByName('Localizacao').AsString := BookData.Localizacao;
+    LQry.ParamByName('Quantidade').AsInteger := BookData.Quantidade;
+    LQry.ParamByName('DataCadastro').AsDateTime := BookData.DataCadastro;
+    LQry.ParamByName('Usuario').AsInteger := BookData.Usuario;
+
+    LQry.ExecSQL;
+  finally
+    LQry.DisposeOf;
+    LCon.Connected := False;
+    LCon.DisposeOf;
+  end;
+end;
+
+class procedure TBookManagerController.UpdateBook(var BookData: TBookData);
+var
+  LSql: string;
+  LCon: TFDConnection;
+  LQry: TFDQuery;
+begin
+  LSql := 'UPDATE Livros SET';
+
+  if BookData.NomeLivro <> '' then
+    LSql := LSql + ' LIV_NOME_LIVRO = :NomeLivro,';
+  if BookData.NomeAutor <> '' then
+    LSql := LSql + ' LIV_NOME_AUTOR = :NomeAutor,';
+  if BookData.NomeEditora <> '' then
+    LSql := LSql + ' LIV_NOME_EDITORA = :NomeEditora,';
+  if BookData.DataPublicacao <> 0 then
+    LSql := LSql + ' LIV_DATA_PUBLICACAO = :DataPublicacao,';
+  if BookData.Localizacao <> '' then
+    LSql := LSql + ' LIV_LOCALIZACAO = :Localizacao,';
+  if BookData.Quantidade <> 0 then
+    LSql := LSql + ' LIV_QUANTIDADE = :Quantidade,';
+
+  // Remove a última vírgula
+  if LSql.EndsWith(',') then
+    LSql := LSql.Remove(LSql.Length - 1);
+
+  LSql := LSql + ' WHERE LIV_ID = :Id';
+
+  LCon := TDataUtils.CreateConnection;
+  LCon.Connected := True;
+  LQry := TFDQuery.Create(nil);
+  LQry.Connection := LCon;
+  try
+    LQry.SQL.Text := LSql;
+
+    if BookData.NomeLivro <> '' then
+      LQry.ParamByName('NomeLivro').AsString := BookData.NomeLivro;
+    if BookData.NomeAutor <> '' then
+      LQry.ParamByName('NomeAutor').AsString := BookData.NomeAutor;
+    if BookData.NomeEditora <> '' then
+      LQry.ParamByName('NomeEditora').AsString := BookData.NomeEditora;
+    if BookData.DataPublicacao <> 0 then
+      LQry.ParamByName('DataPublicacao').AsDate := BookData.DataPublicacao;
+    if BookData.Localizacao <> '' then
+      LQry.ParamByName('Localizacao').AsString := BookData.Localizacao;
+    if BookData.Quantidade <> 0 then
+      LQry.ParamByName('Quantidade').AsInteger := BookData.Quantidade;
+
+    LQry.ParamByName('Id').AsInteger := BookData.Id;
+
+    LQry.ExecSQL;
+  finally
+    LQry.DisposeOf;
+    LCon.Connected := False;
+    LCon.DisposeOf;
+  end;
+end;
+
+class procedure TBookManagerController.DeleteBookbyId(AId: Integer);
+const
+  LSql =
+    'DELETE FROM Livros WHERE LIV_ID = :Id';
+var
+  LCon: TFDConnection;
+  LQry: TFDQuery;
+begin
+  LCon := TDataUtils.CreateConnection;
+  LCon.Connected := True;
+  LQry := TFDQuery.Create(nil);
+  LQry.Connection := LCon;
+  try
+    LQry.SQL.Text := LSql;
+    LQry.ParamByName('Id').AsInteger := AId;
+    LQry.ExecSQL;
+  finally
+    LQry.DisposeOf;
+    LCon.Connected := False;
+    LCon.DisposeOf;
+  end;
+end;
+
+end.

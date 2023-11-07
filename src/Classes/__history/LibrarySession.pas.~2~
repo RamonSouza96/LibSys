@@ -1,0 +1,65 @@
+unit LibrarySession;
+
+interface
+
+// A classe TLibrarySession representa a sessão da biblioteca, responsável por gerenciar o estado de login do usuário.
+// Ela implementa o padrão singleton para garantir que haja apenas uma instância da classe durante toda a execução do programa.
+// O ID do usuário logado é armazenado na propriedade FLoggedInUserID.
+// A classe oferece métodos para login, logout e verificação do estado de login do usuário.
+// Para usar a classe, chame TLibrarySession.GetInstance para obter a instância única e utilize seus métodos para controlar a sessão do usuário.
+
+type
+  TLibrarySession = class
+  private
+    class var FInstance: TLibrarySession;
+    FLoggedInUserID: Integer;
+    constructor Create;
+  public
+    class function GetInstance: TLibrarySession;
+    function IsUserLoggedIn: Boolean;
+    procedure Login(UserID: Integer);
+    procedure Logout;
+    function GetLoggedInUserID: Integer;
+  end;
+
+implementation
+
+{ TLibrarySession }
+
+constructor TLibrarySession.Create;
+begin
+  // Inicializar propriedades ou realizar outras configurações necessárias
+  FLoggedInUserID := 0;
+end;
+
+class function TLibrarySession.GetInstance: TLibrarySession;
+begin
+  if FInstance = nil then
+    FInstance := TLibrarySession.Create;
+  Result := FInstance;
+end;
+
+function TLibrarySession.IsUserLoggedIn: Boolean;
+begin
+  Result := FLoggedInUserID <> 0;
+end;
+
+procedure TLibrarySession.Login(UserID: Integer);
+begin
+  FLoggedInUserID := UserID;
+  // Realizar ações adicionais necessárias ao fazer login
+end;
+
+procedure TLibrarySession.Logout;
+begin
+  FLoggedInUserID := 0;
+  // Realizar ações adicionais necessárias ao fazer logout
+end;
+
+function TLibrarySession.GetLoggedInUserID: Integer;
+begin
+  Result := FLoggedInUserID;
+end;
+
+end.
+

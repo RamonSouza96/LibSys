@@ -1,0 +1,84 @@
+﻿unit Dm.Script;
+
+interface
+
+const
+  TableEmprestimos =
+    'CREATE TABLE Emprestimos ('+
+    '    EMP_ID            INTEGER     PRIMARY KEY AUTOINCREMENT,'+
+    '    USUARIO_ID        INTEGER     REFERENCES Usuarios (USU_ID),'+
+    '    EMP_DATA_SAIDA    DATE,'+
+    '    EMP_DATA_RETORNO  DATE,'+
+    '    EMP_OBSERVACAO    TEXT (1000),'+
+    '    EMP_USUARIO       INTEGER'+
+    ');';
+
+  TableLivrosEmestados =
+    'CREATE TABLE LivrosEmprestados ('+
+    '    ID             INTEGER PRIMARY KEY AUTOINCREMENT,'+
+    '    EMPRESTIMO_ID  INTEGER REFERENCES Emprestimos (EMP_ID),'+
+    '    LIVRO_ID       INTEGER REFERENCES Livros,'+
+    '    DATA_DEVOLUCAO DATE,'+
+    '    MULTA          REAL,'+
+    '    STATUS         INTEGER'+
+    ');';
+
+  TableLivros =
+    'CREATE TABLE IF NOT EXISTS Livros (' +
+    '    LIV_ID INTEGER PRIMARY KEY AUTOINCREMENT,' +
+    '    LIV_NOME_LIVRO VARCHAR (300),' +
+    '    LIV_NOME_AUTOR VARCHAR (100),' +
+    '    LIV_NOME_EDITORA VARCHAR (150),' +
+    '    LIV_DATA_PUBLICACAO DATE,' +
+    '    LIV_LOCALIZACAO VARCHAR (50),' +
+    '    LIV_QUANTIDADE INTEGER (10) DEFAULT (1),' +
+    '    LIV_CATEGORIA       INTEGER,'+
+    '    LIV_CAPA BLOB,' +
+    '    LIV_DATA_CADASTRO DATETIME,' +
+    '    LIV_USUARIO INTEGER REFERENCES Usuarios (USU_ID)' +
+    ');';
+
+  TableGeneroLivros =
+    ' CREATE TABLE GenerosLivro ('+
+    '     ID        INTEGER       PRIMARY KEY AUTOINCREMENT,'+
+    '     Nome      VARCHAR (100),'+
+    '     Descricao VARCHAR (255) '+
+    ' );';
+
+  TableParametros =
+    'CREATE TABLE IF NOT EXISTS Parametros (' +
+    '    PAR_ID INTEGER PRIMARY KEY AUTOINCREMENT,' +
+    '    PAR_VALOR_MULTA REAL,' +
+    '    PAR_DIAS_PARA_MULTAR INTEGER,' +
+    '    PAR_LIMITE_LIVROS INTEGER,' +
+    '    PAR_DIAS_REATIVACAO INTEGER' +
+    ');';
+
+  TableUsuarios =
+    'CREATE TABLE IF NOT EXISTS Usuarios (' +
+    '    USU_ID INTEGER PRIMARY KEY AUTOINCREMENT,' +
+    '    USU_NOME VARCHAR (50),' +
+    '    USU_LOGIN VARCHAR (50),' +
+    '    USU_SENHA VARCHAR (100),' +
+    '    USU_EMAIL VARCHAR (50),' +
+    '    USU_TIPO_USUARIO INTEGER,' +
+    '    USU_ATIVO BOOLEAN,' +
+    '    USU_DATA_CADASTRO DATE,' +
+    '    USU_DATA_INATIVO  VARCHAR (10),' +
+    '    USU_SALT VARCHAR (100)' +
+    ');';
+
+var
+  MyConstants: array [0 .. 5] of string = (
+    TableEmprestimos,  { Tabela de empréstimos. }
+    TableLivrosEmestados, { Tabela de LivrosEmprestados. }
+    TableLivros,       { Tabela de livros. }
+    TableGeneroLivros, { Tabela de GenerosLivro }
+    TableParametros,   { Tabela de parâmetros. }
+    TableUsuarios      { Tabela de usuários. }
+  );
+
+implementation
+
+end.
+

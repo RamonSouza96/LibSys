@@ -1,0 +1,302 @@
+﻿unit User.Controller;
+
+interface
+
+uses
+  FireDAC.Comp.Client, System.SysUtils, System.Classes, Data.DB, FMX.Types, FireDAC.stan.Param,
+  FireDAC.Comp.DataSet, FireDAC.Stan.Def, FireDAC.Phys.SQLite, FireDAC.Phys.SQLiteDef, System.Types,
+  System.Generics.Collections, FMX.Dialogs;
+
+type
+  TUserData = record
+    Id: Integer;
+    Nome: string;
+    Email: String;
+    Tipo: Integer;
+    Result: string;
+    Usuario: string;
+    Senha: string;
+    Salt: string;
+    Status: Boolean;
+    UserList: TArray<TUserData>;
+  end;
+
+  TUserController = class
+  public
+    class function GetUserById(AId: Integer): TUserData;
+    class procedure SaveUser(var UserData: TUserData);
+    class procedure UpdateUser(const AUserData: TUserData;
+      AFields: TStringList);
+    class procedure DeleteUser(AId: Integer);
+    class function IsLoginExists(ALogin: string): Boolean;
+  end;
+
+implementation
+
+uses
+  Dm.Utils;
+
+{ TUserController }
+
+class function TUserController.GetUserById(AId: Integer): TUserData;
+const
+  LSql =
+    'SELECT ' +
+    '  USU_ID, ' +
+    '  USU_NOME, ' +
+    '  USU_LOGIN, ' +
+    '  USU_SENHA, ' +
+    '  USU_EMAIL, ' +
+    '  USU_ATIVO, ' +
+    '  USU_SALT, ' +
+    '  USU_TIPO_USUARIO, ' +
+    '  USU_DATA_INATIVO ' +
+    'FROM ' +
+    '  Usuarios';
+var
+  LResultData: TUserData;
+  LQry: TFDQuery;
+  LCon: TFDConnection;
+  LUserList: TList<TUserData>;
+begin
+  LCon := TDataUtils.CreateConnection;
+  LCon.Connected := True;
+  LQry := TFDQuery.Create(nil);
+  LQry.Connection := LCon;
+  LUserList := TList<TUserData>.Create;
+  try
+    with LQry do
+    begin
+      Close;
+      SQL.Clear;
+      SQL.Add(LSql);
+      if AId <> 0 then
+      begin
+        SQL.Add('WHERE USU_ID = :pId');
+        ParamByName('pId').AsInteger := AId;
+      end;
+      Prepared := True;
+      Open;
+
+      if RecordCount > 0 then
+      begin
+        if AId = 0 then
+        begin
+          while not Eof do
+          begin
+            LResultData.Id := FieldByName('USU_ID').AsInteger;
+            LResultData.Nome := FieldByName('USU_NOME').AsString;
+            LResultData.Email := FieldByName('USU_EMAIL').AsString;
+            LResultData.Tipo := FieldByName('USU_TIPO_USUARIO').AsInteger;
+            LResultData.Usuario := FieldByName('USU_NOME').AsString;
+            LResultData.Senha := '';
+            LResultData.Status := FieldByName('USU_ATIVO').AsBoolean;
+            LUserList.Add(LResultData);
+
+            Next;
+          end;
+
+          LResultData.UserList := LUserList.ToArray;
+        end
+        else
+        begin
+          LResultData.Id := FieldByName('USU_ID').AsInteger;
+          LResultData.Nome := FieldByName('USU_NOME').AsString;
+          LResultData.Email := FieldByName('USU_EMAIL').AsString;
+          LResultData.Tipo := FieldByName('USU_TIPO_USUARIO').AsInteger;
+          LResultData.Usuario := FieldByName('USU_NOME').AsString;
+          LResultData.Senha := '';
+          LResultData.Status := FieldByName('USU_ATIVO').AsBoolean;
+        end;
+      end;
+    end;
+  finally
+    LQry.Close;
+    LQry.DisposeOf;
+    LCon.Connected := False;
+    LCon.DisposeOf;
+    LUserList.Free;
+  end;
+
+  Result := LResultData;
+end;
+
+class procedure TUserController.SaveUser(var UserData: TUserData);
+var
+  LCon: TFDConnection;
+  LQry: TFDQuery;
+  LSql: string;
+begin
+  LCon := TDataUtils.CreateConnection;
+  LCon.Connected := True;
+  LQry := TFDQuery.Create(nil);
+  LQry.Connection := LCon;
+  try
+    if UserData.Id = 0 then
+    begin
+      LSql :=
+        'INSERT INTO Usuarios (USU_NOME, USU_LOGIN, USU_SENHA, USU_EMAIL, USU_ATIVO, USU_SALT, USU_TIPO_USUARIO, USU_DATA_CADASTRO, USU_DATA_INATIVO) ' +
+        'VALUES (:NOME, :LOGIN, :SENHA, :EMAIL, :ATIVO, :SALT, :TIPO_USUARIO, :USU_DATA_CADASTRO, :USU_DATA_INATIVO)';
+
+      with LQry do
+      begin
+        Close;
+        SQL.Clear;
+        SQL.Add(LSql);
+        ParamByName('NOME').AsString := UserData.Nome;
+        ParamByName('LOGIN').AsString := UserData.Usuario;
+        ParamByName('SENHA').AsString := UserData.Senha;
+        ParamByName('EMAIL').AsString := UserData.Email;
+        ParamByName('ATIVO').AsBoolean := UserData.Status;
+        ParamByName('SALT').AsString := UserData.Salt;
+        ParamByName('TIPO_USUARIO').AsInteger := UserData.Tipo;
+        ParamByName('USU_DATA_CADASTRO').AsDate := Date;
+        if not UserData.Status then
+          ParamByName('USU_DATA_INATIVO').AsString := DateToStr(Date)
+        else
+          ParamByName('USU_DATA_INATIVO').AsString := ''; // Limpa o parâmetro se o usuário estiver ativo
+
+        ExecSQL;
+      end;
+    end;
+  finally
+    LQry.Close;
+    LQry.DisposeOf;
+    LCon.Connected := False;
+    LCon.DisposeOf;
+  end;
+end;
+
+class procedure TUserController.UpdateUser(const AUserData: TUserData; AFields: TStringList);
+var
+  LSql: string;
+  LCon: TFDConnection;
+  LQry: TFDQuery;
+begin
+  LSql := 'UPDATE Usuarios SET';
+
+  if AUserData.Nome <> '' then
+    LSql := LSql + ' USU_NOME = :pNome,';
+  if AUserData.Usuario <> '' then
+    LSql := LSql + ' USU_LOGIN = :pUsuario,';
+  if AUserData.Senha <> '' then
+    LSql := LSql + ' USU_SENHA = :pSenha,';
+  if AUserData.Email <> '' then
+    LSql := LSql + ' USU_EMAIL = :pEmail,';
+  if AUserData.Status <> False then
+    LSql := LSql + ' USU_ATIVO = :pStatus,';
+  if AUserData.Salt <> '' then
+    LSql := LSql + ' USU_SALT = :pSalt,';
+  if AUserData.Tipo <> 0 then
+    LSql := LSql + ' USU_TIPO_USUARIO = :pTipo,';
+  if not AUserData.Status then
+    LSql := LSql + ' USU_DATA_INATIVO = :pDataInativo,';
+
+  // Remove a última vírgula
+  if LSql.EndsWith(',') then
+    LSql := LSql.Remove(LSql.Length - 1);
+
+  LSql := LSql + ' WHERE USU_ID = :pId';
+
+  LCon := TDataUtils.CreateConnection;
+  LCon.Connected := True;
+  LQry := TFDQuery.Create(nil);
+  LQry.Connection := LCon;
+  try
+    with LQry do
+    begin
+      Close;
+      SQL.Clear;
+      SQL.Add(LSql);
+
+      if AUserData.Nome <> '' then
+        ParamByName('pNome').AsString := AUserData.Nome;
+      if AUserData.Usuario <> '' then
+        ParamByName('pUsuario').AsString := AUserData.Usuario;
+      if AUserData.Senha <> '' then
+        ParamByName('pSenha').AsString := AUserData.Senha;
+      if AUserData.Email <> '' then
+        ParamByName('pEmail').AsString := AUserData.Email;
+      if AUserData.Status <> False then
+        ParamByName('pStatus').AsBoolean := AUserData.Status;
+      if AUserData.Salt <> '' then
+        ParamByName('pSalt').AsString := AUserData.Salt;
+      if AUserData.Tipo <> 0 then
+        ParamByName('pTipo').AsInteger := AUserData.Tipo;
+      if not AUserData.Status then
+        ParamByName('pDataInativo').AsString := DateToStr(Date);
+
+      ParamByName('pId').AsInteger := AUserData.Id;
+
+      ExecSQL;
+    end;
+  finally
+    LQry.DisposeOf;
+    LCon.Connected := False;
+    LCon.DisposeOf;
+  end;
+end;
+
+class procedure TUserController.DeleteUser(AId: Integer);
+var
+  LCon: TFDConnection;
+  LQry: TFDQuery;
+  LSql: string;
+begin
+  LCon := TDataUtils.CreateConnection;
+  LCon.Connected := True;
+  LQry := TFDQuery.Create(nil);
+  LQry.Connection := LCon;
+  try
+    LSql :=
+      'DELETE FROM Usuarios WHERE USU_ID = :ID';
+
+    with LQry do
+    begin
+      Close;
+      SQL.Clear;
+      SQL.Add(LSql);
+      ParamByName('ID').AsInteger := AId;
+      ExecSQL;
+    end;
+  finally
+    LQry.Close;
+    LQry.DisposeOf;
+    LCon.Connected := False;
+    LCon.DisposeOf;
+  end;
+end;
+
+class function TUserController.IsLoginExists(ALogin: string): Boolean;
+var
+  LCon: TFDConnection;
+  LQry: TFDQuery;
+  LSql: string;
+begin
+  LCon := TDataUtils.CreateConnection;
+  LCon.Connected := True;
+  LQry := TFDQuery.Create(nil);
+  LQry.Connection := LCon;
+  try
+    LSql :=
+      'SELECT COUNT(*) FROM Usuarios WHERE USU_LOGIN = :LOGIN';
+
+    with LQry do
+    begin
+      Close;
+      SQL.Clear;
+      SQL.Add(LSql);
+      ParamByName('LOGIN').AsString := ALogin;
+      Open;
+      Result := Fields[0].AsInteger > 0;
+    end;
+  finally
+    LQry.Close;
+    LQry.DisposeOf;
+    LCon.Connected := False;
+    LCon.DisposeOf;
+  end;
+end;
+
+end.
+

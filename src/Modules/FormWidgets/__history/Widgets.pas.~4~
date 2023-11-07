@@ -1,0 +1,25 @@
+unit Widgets;
+
+interface
+
+uses
+  System.SysUtils, System.Types, System.UITypes, System.Classes, System.Variants,
+  FMX.Types, FMX.Controls, FMX.Forms, FMX.Graphics, FMX.Dialogs, Skia, Skia.FMX;
+
+type
+  TFormWidgets = class(TForm)
+    SkSvgBackStatus: TSkSvg;
+  private
+    { Private declarations }
+  public
+    { Public declarations }
+  end;
+
+var
+  FormWidgets: TFormWidgets;
+
+implementation
+
+{$R *.fmx}
+
+end.

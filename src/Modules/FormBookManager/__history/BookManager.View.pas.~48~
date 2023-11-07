@@ -1,0 +1,208 @@
+﻿unit BookManager.View;
+
+interface
+
+uses
+  System.SysUtils, System.Types, System.UITypes, System.Classes, System.Variants,
+  FMX.Types, FMX.Controls, FMX.Forms, FMX.Graphics, FMX.Dialogs, FMX.Objects,
+  FMX.ListView.Types, FMX.ListView.Appearances, FMX.ListView.Adapters.Base,
+  Skia, FMX.Edit, FMX.Layouts, Skia.FMX, FMX.Effects, FMX.Controls.Presentation,
+  FMX.StdCtrls, FMX.ListView, FMX.ListBox, FMX.DateTimeCtrls, FMX.EditBox,
+  FMX.NumberBox, FMX.Memo.Types, FMX.ScrollBox, FMX.Memo, FMX.Menus;
+
+type
+  TFormBookManager = class(TForm)
+    RectBookMBackgraund: TRectangle;
+    Layout2: TLayout;
+    LvLivros: TListView;
+    RectNewBook: TRectangle;
+    BtnNewBook: TSpeedButton;
+    ShadowEffect3: TShadowEffect;
+    Layout1: TLayout;
+    Rectangle2: TRectangle;
+    BtnSaveBook: TSpeedButton;
+    SkSvg1: TSkSvg;
+    Line1: TLine;
+    SkLabel1: TSkLabel;
+    Layout3: TLayout;
+    SkLblTit: TSkLabel;
+    RectDesc: TRectangle;
+    EdtLivroNome: TEdit;
+    SkSvg5: TSkSvg;
+    Rectangle3: TRectangle;
+    SkLabel4: TSkLabel;
+    ShadowEffect1: TShadowEffect;
+    Rectangle1: TRectangle;
+    EdtCategoria: TEdit;
+    SkSvg2: TSkSvg;
+    Rectangle6: TRectangle;
+    SkLabel2: TSkLabel;
+    ShadowEffect5: TShadowEffect;
+    SkSvgArrowCbx: TSkSvg;
+    SkLblDescCategoria: TSkLabel;
+    StyleBook1: TStyleBook;
+    Rectangle7: TRectangle;
+    EdtLivroQuantidade: TEdit;
+    SkSvg6: TSkSvg;
+    Rectangle8: TRectangle;
+    SkLabel6: TSkLabel;
+    ShadowEffect4: TShadowEffect;
+    RectLocalizacao: TRectangle;
+    EdtLivroLocalizacao: TEdit;
+    SkSvg7: TSkSvg;
+    Rectangle10: TRectangle;
+    SkLabel7: TSkLabel;
+    ShadowEffect6: TShadowEffect;
+    RectAnoLivro: TRectangle;
+    EdtLivroAno: TEdit;
+    SkSvg8: TSkSvg;
+    RectEditora: TRectangle;
+    EdtLivroEditora: TEdit;
+    SkSvg9: TSkSvg;
+    VertScroll: TVertScrollBox;
+    LayMargim: TLayout;
+    Layout5: TLayout;
+    Rectangle15: TRectangle;
+    ShadowEffect10: TShadowEffect;
+    SkSvgFormBookBack: TSkSvg;
+    CbxLivroCategoria: TComboBox;
+    DateEditLivro: TDateEdit;
+    SkSvgOpenPicker: TSkSvg;
+    Rectangle9: TRectangle;
+    EdtLivroAutor: TEdit;
+    SkSvg3: TSkSvg;
+    Rectangle11: TRectangle;
+    SkLabel3: TSkLabel;
+    ShadowEffect7: TShadowEffect;
+    PopupMenu1: TPopupMenu;
+    DeleteItem: TMenuItem;
+    procedure FormCreate(Sender: TObject);
+    procedure SkSvgArrowCbxClick(Sender: TObject);
+    procedure CbxLivroCategoriaClosePopup(Sender: TObject);
+    procedure BtnSaveBookClick(Sender: TObject);
+    procedure BtnNewBookClick(Sender: TObject);
+    procedure DateEditLivroClosePicker(Sender: TObject);
+    procedure EdtLivroQuantidadeKeyDown(Sender: TObject; var Key: Word;
+      var KeyChar: Char; Shift: TShiftState);
+    procedure EdtLivroAnoEnter(Sender: TObject);
+    procedure SkSvgOpenPickerClick(Sender: TObject);
+    procedure FormShow(Sender: TObject);
+    procedure EdtLivroLocalizacaoEnter(Sender: TObject);
+    procedure EdtLivroNomeEnter(Sender: TObject);
+    procedure EdtLivroNomeKeyUp(Sender: TObject; var Key: Word;
+      var KeyChar: Char; Shift: TShiftState);
+    procedure DeleteItemClick(Sender: TObject);
+  private
+    { Private declarations }
+  public
+    { Public declarations }
+  end;
+
+var
+  FormBookManager: TFormBookManager;
+
+implementation
+
+{$R *.fmx}
+
+uses Helpers.HelpsAll, BookManager.Settings;
+
+procedure TFormBookManager.BtnNewBookClick(Sender: TObject);
+begin
+  TBookManager_Settings.CreateNewBook;
+end;
+
+procedure TFormBookManager.BtnSaveBookClick(Sender: TObject);
+begin
+ TBookManager_Settings.SaveOrUpdateBook;
+end;
+
+procedure TFormBookManager.CbxLivroCategoriaClosePopup(Sender: TObject);
+begin
+  if CbxLivroCategoria.ItemIndex <> -1 then
+  begin
+    EdtCategoria.Text := CbxLivroCategoria.ListItems[CbxLivroCategoria.ItemIndex].Text;
+    EdtCategoria.Tag := CbxLivroCategoria.ListItems[CbxLivroCategoria.ItemIndex].Tag;
+    SkLblDescCategoria.Text := CbxLivroCategoria.ListItems[CbxLivroCategoria.ItemIndex].TagString;
+  end;
+end;
+
+procedure TFormBookManager.DateEditLivroClosePicker(Sender: TObject);
+begin
+ EdtLivroAno.Text := DateToStr(DateEditLivro.Date);
+end;
+
+procedure TFormBookManager.DeleteItemClick(Sender: TObject);
+begin
+ TBookManager_Settings.DeleteBook;
+end;
+
+procedure TFormBookManager.EdtLivroAnoEnter(Sender: TObject);
+begin
+ EdtLivroAno.Visible := False;
+ DateEditLivro.Visible := True;
+end;
+
+procedure TFormBookManager.EdtLivroLocalizacaoEnter(Sender: TObject);
+begin
+ FormBookManager.EdtLivroLocalizacao.SetFocus;
+end;
+
+procedure TFormBookManager.EdtLivroNomeEnter(Sender: TObject);
+begin
+ TBookManager_Settings.iInputFocus := Sender;
+end;
+
+procedure TFormBookManager.EdtLivroNomeKeyUp(Sender: TObject; var Key: Word;
+  var KeyChar: Char; Shift: TShiftState);
+begin
+  if (Key = vkTab) or (Key = vkReturn) then
+   TBookManager_Settings.NextInput;
+end;
+
+procedure TFormBookManager.EdtLivroQuantidadeKeyDown(Sender: TObject;
+  var Key: Word; var KeyChar: Char; Shift: TShiftState);
+begin
+   if not (KeyChar in ['0'..'9']) then
+    KeyChar := #0; // Bloqueia a digitação do caractere
+end;
+
+procedure TFormBookManager.FormCreate(Sender: TObject);
+begin
+ THelpsAll.SoftScroll(VertScroll);
+end;
+
+procedure TFormBookManager.FormShow(Sender: TObject);
+var
+  I: Integer;
+  Control: TFmxObject;
+begin
+  for I := 0 to FormBookManager.ChildrenCount - 1 do
+  begin
+    Control := FormBookManager.Children[I];
+    if not (Control is TEdit) then
+    begin
+      if (Control is TRectangle) then
+       TRectangle(Control).TabOrder := -1;
+
+     if (Control is TLayout) then
+       TLayout(Control).TabOrder := -1;
+
+     if (Control is TSkLabel) then
+       TSkLabel(Control).TabOrder := -1;
+    end;
+  end;
+end;
+
+
+procedure TFormBookManager.SkSvgArrowCbxClick(Sender: TObject);
+begin
+ CbxLivroCategoria.DropDown;
+end;
+
+procedure TFormBookManager.SkSvgOpenPickerClick(Sender: TObject);
+begin
+ DateEditLivro.OpenPicker;
+end;
+
+end.

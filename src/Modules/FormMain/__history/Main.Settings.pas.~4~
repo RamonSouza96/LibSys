@@ -1,0 +1,22 @@
+unit Main.Settings;
+
+interface
+
+type
+  TMain_Settings = class
+  Private
+  Public
+   class procedure OpenFormMain;
+  end;
+
+implementation
+
+{ TMain_Settings }
+
+class procedure TMain_Settings.OpenFormMain;
+begin
+
+
+end;
+
+End.

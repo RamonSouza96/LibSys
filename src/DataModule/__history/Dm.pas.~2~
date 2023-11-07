@@ -1,0 +1,40 @@
+unit Dm;
+
+interface
+
+uses
+  System.SysUtils, System.Classes, FireDAC.Stan.ExprFuncs,
+  FireDAC.Phys.SQLiteWrapper.Stat, FireDAC.Phys.SQLiteDef, FireDAC.Stan.Intf,
+  FireDAC.Stan.Option, FireDAC.Stan.Error, FireDAC.UI.Intf, FireDAC.Phys.Intf,
+  FireDAC.Stan.Def, FireDAC.Stan.Pool, FireDAC.Stan.Async, FireDAC.Phys,
+  FireDAC.FMXUI.Wait, Data.DB, FireDAC.Comp.Client, FireDAC.Phys.SQLite,
+  FireDAC.DApt, FireDAC.Stan.Param, FireDAC.DatS, FireDAC.DApt.Intf,
+  FireDAC.Comp.DataSet;
+
+type
+  TDm1 = class(TDataModule)
+    FDPhysSQLiteDriverLink1: TFDPhysSQLiteDriverLink;
+    FDConnection1: TFDConnection;
+    FDQuery1: TFDQuery;
+    procedure FDConnection1AfterConnect(Sender: TObject);
+  private
+    { Private declarations }
+  public
+    { Public declarations }
+  end;
+
+var
+  Dm1: TDm1;
+
+implementation
+
+{%CLASSGROUP 'FMX.Controls.TControl'}
+
+{$R *.dfm}
+
+procedure TDm1.FDConnection1AfterConnect(Sender: TObject);
+begin
+ TDataUtils.CheckDataBase(AQry: TFDQuery; FDConnection1);
+end;
+
+end.

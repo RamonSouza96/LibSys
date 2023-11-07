@@ -1,0 +1,109 @@
+unit Dm.Script;
+
+interface
+
+const
+  TableAutomation =
+    'CREATE TABLE IF NOT EXISTS Automation ('+
+    '    id                     INTEGER  PRIMARY KEY AUTOINCREMENT,'+
+    '    Key_id                 TEXT, '+
+    '    automation_name        TEXT,'+
+    '    automation_description TEXT,'+
+    '    creation_date          DATETIME'+
+    ');';
+
+  TableAutomationActions =
+   'CREATE TABLE IF NOT EXISTS AutomationActions ('+
+   '    [id ]         INTEGER PRIMARY KEY AUTOINCREMENT,'+
+   '    [order_exec]  INTEGER NOT NULL,'+
+   '    type_action   TEXT,'+
+   '    Key_id                TEXT '+
+   ');';
+
+  TableKeyboardAction =
+   'CREATE TABLE IF NOT EXISTS KeyboardAction ('+
+   '    id                    INTEGER PRIMARY KEY AUTOINCREMENT'+
+   '                                  NOT NULL,'+
+   '    time_before_execution TIME,'+
+   '    small_text            TEXT,'+
+   '    big_text              BLOB,'+
+   '    text_from_list        BOOLEAN,'+
+   '    add_count_in_text     BOOLEAN,'+
+   '    add_space_end_of_text BOOLEAN,'+
+   '    Key_id                TEXT '+
+   ');';
+
+  TableMouseAction =
+   'CREATE TABLE IF NOT EXISTS MouseAction ('+
+   '    id                    INTEGER PRIMARY KEY AUTOINCREMENT,'+
+   '    time_before_execution TIME,'+
+   '    number_of_clicks      INTEGER NOT NULL,'+
+   '    select_and_click      BOOLEAN,'+
+   '    position_cursor       BOOLEAN,'+
+   '    right_click           BOOLEAN,'+
+   '    left_click_pressed    BOOLEAN,'+
+   '    position_x            INTEGER,'+
+   '    position_y            INTEGER,'+
+   '    scroll_value          INTEGER,'+
+   '    increase_scroll       BOOLEAN,'+
+   '    Key_id                TEXT '+
+   ');';
+
+  TableSettings =
+   'CREATE TABLE IF NOT EXISTS Settings ('+
+   '    id          INTEGER PRIMARY KEY AUTOINCREMENT,'+
+   '    cal_int_x   INTEGER,'+
+   '    cal_int_y   INTEGER,'+
+   '    ext_x       INTEGER,'+
+   '    ext_y       INTEGER,'+
+   '    username    TEXT,'+
+   '    password    TEXT,'+
+   '    version     TEXT,'+
+   '    license_key TEXT,'+
+   '    link        TEXT'+
+   ');';
+
+
+ const Atomation_SQL = ''+
+      ' SELECT aa.type_action,'+
+      '        aa.order_exec,'+
+      '        ma.time_before_execution as time_before_execution_MA,'+
+      '        ma.number_of_clicks,'+
+      '        ma.select_and_click,'+
+      '        ma.position_cursor,'+
+      '        ma.right_click,'+
+      '        ma.left_click_pressed,'+
+      '        ma.position_x,'+
+      '        ma.position_y,'+
+      '        ma.scroll_value,'+
+      '        ma.increase_scroll,'+
+      '        ka.time_before_execution as time_before_execution_KA,'+
+      '        ka.small_text,'+
+      '        ka.big_text,'+
+      '        ka.text_from_list,'+
+      '        ka.add_count_in_text,'+
+      '        ka.add_space_end_of_text'+
+      '   FROM Automation a'+
+      '        JOIN'+
+      '        AutomationActions aa ON a.Key_id = aa.Key_id'+
+      '        LEFT JOIN'+
+      '        KeyboardAction ka ON aa.id = ka.action_id'+
+      '        LEFT JOIN'+
+      '        MouseAction ma ON aa.id = ma.action_id'+
+      '  WHERE a.Key_id = :keyid'+
+      '  ORDER BY aa.order_exec ASC';
+
+
+var
+  //AAUTONMATION_SQL: string = (AUTONMATION_SQL);
+  MyConstants: array [0 .. 4] of string = (
+    TableAutomation,        {Tabela pai da automação (descrição, hora, etc.). }
+    TableAutomationActions, {Ações genéricas relacionadas à automação (vinculadas à TableAutomation).}
+    TableKeyboardAction,    {Ações relacionadas ao teclado (vinculadas à TableAutomationActions).}
+    TableMouseAction,       {Ações relacionadas ao mouse (vinculadas à TableAutomationActions).}
+    TableSettings           {Configurações gerais do sistema.}
+  );
+
+implementation
+
+end.

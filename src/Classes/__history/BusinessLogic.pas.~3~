@@ -1,0 +1,113 @@
+unit BusinessLogic;
+
+interface
+
+uses
+  FireDAC.Comp.Client, FireDAC.Stan.Param;
+
+type
+  TBusinessLogic = class
+  private
+    class var FConnection: TFDConnection;
+    class var FQuery: TFDQuery;
+    class procedure CreateConnection;
+    class procedure CreateQuery;
+    class procedure ReleaseConnection;
+    class procedure ReleaseQuery;
+  public
+    class constructor Create;
+    class destructor Destroy;
+    class function CalculateFine(const DataRetorno: TDateTime): Currency; static;
+    class procedure BlockUser(UsuarioID: Integer); static;
+    class procedure CalculateFinesAndBlockUsers; static;
+  end;
+
+implementation
+
+uses
+  System.SysUtils, Dm.Utils;
+
+class constructor TBusinessLogic.Create;
+begin
+  CreateConnection;
+  CreateQuery;
+end;
+
+class destructor TBusinessLogic.Destroy;
+begin
+  ReleaseQuery;
+  ReleaseConnection;
+end;
+
+class procedure TBusinessLogic.CreateConnection;
+begin
+  FConnection := TFDConnection.Create(nil);
+  // Configurar as propriedades da conexão conforme necessário
+  // ...
+  FConnection.Connected := True;
+end;
+
+class procedure TBusinessLogic.ReleaseConnection;
+begin
+  FConnection.Connected := False;
+  FConnection.Free;
+end;
+
+class procedure TBusinessLogic.CreateQuery;
+begin
+  FQuery := TFDQuery.Create(nil);
+  FQuery.Connection := FConnection;
+end;
+
+class procedure TBusinessLogic.ReleaseQuery;
+begin
+  FQuery.Free;
+end;
+
+class function TBusinessLogic.CalculateFine(const DataRetorno: TDateTime): Currency;
+begin
+  FQuery.SQL.Text := 'SELECT SUM(EMP_MULTA) FROM Emprestimos WHERE EMP_DATA_RETORNO < :DataRetorno';
+  FQuery.ParamByName('DataRetorno').AsDateTime := DataRetorno;
+  FQuery.Open;
+  Result := FQuery.Fields[0].AsCurrency;
+  FQuery.Close;
+end;
+
+class procedure TBusinessLogic.BlockUser(UsuarioID: Integer);
+begin
+  FQuery.SQL.Text := 'UPDATE Usuarios SET USU_BLOQUEADO = 1, USU_DATA_INATIVO = :DataInativo WHERE USU_ID = :UsuarioID';
+  FQuery.ParamByName('DataInativo').AsDateTime := Now; // Defina a data atual correta
+  FQuery.ParamByName('UsuarioID').AsInteger := UsuarioID;
+  FQuery.ExecSQL;
+end;
+
+class procedure TBusinessLogic.CalculateFinesAndBlockUsers;
+var
+  LQry: TFDQuery;
+begin
+  LQry := TFDQuery.Create(nil);
+  try
+    LQry.Connection := FConnection;
+
+    LQry.SQL.Text := 'SELECT EMP_ID, EMP_DATA_RETORNO, USUARIO_ID ' +
+      'FROM Emprestimos ' + 'WHERE EMP_STATUS = :StatusAberto';
+    LQry.ParamByName('StatusAberto').AsInteger := 1;
+    LQry.Open;
+
+    while not LQry.Eof do
+    begin
+      if LQry.FieldByName('EMP_DATA_RETORNO').AsDateTime < Date then
+      begin
+        // Bloquear o usuário
+        BlockUser(LQry.FieldByName('USUARIO_ID').AsInteger);
+      end;
+
+      LQry.Next;
+    end;
+  finally
+    LQry.Close;
+    LQry.DisposeOf;
+  end;
+end;
+
+end.

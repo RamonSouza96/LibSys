@@ -1,0 +1,171 @@
+unit BusinessLogic;
+
+interface
+
+uses
+  FireDAC.Comp.Client, FireDAC.Stan.Param;
+
+type
+  TBusinessLogic = class
+  private
+    FConnection: TFDConnection;
+    FQuery: TFDQuery;
+    procedure CreateConnection;
+    procedure CreateQuery;
+    procedure ReleaseConnection;
+    procedure ReleaseQuery;
+  public
+    constructor Create;
+    destructor Destroy; override;
+    function CalculateFine(const DataRetorno: TDateTime): Currency;
+    procedure BlockUser(UsuarioID: Integer);
+    procedure CalculateFinesAndBlockUsers;
+    procedure UpdateStatusAndBlockUser(MovimentoID: Integer);
+  end;
+
+implementation
+
+uses
+  System.SysUtils, Dm.Utils;
+
+constructor TBusinessLogic.Create;
+begin
+  inherited Create;
+  CreateConnection;
+  CreateQuery;
+end;
+
+destructor TBusinessLogic.Destroy;
+begin
+  ReleaseQuery;
+  ReleaseConnection;
+  inherited Destroy;
+end;
+
+procedure TBusinessLogic.CreateConnection;
+begin
+  FConnection := TFDConnection.Create(nil);
+  // Configurar as propriedades da conexão conforme necessário
+  // ...
+  FConnection.Connected := True;
+end;
+
+procedure TBusinessLogic.ReleaseConnection;
+begin
+  FConnection.Connected := False;
+  FConnection.Free;
+end;
+
+procedure TBusinessLogic.CreateQuery;
+begin
+  FQuery := TFDQuery.Create(nil);
+  FQuery.Connection := FConnection;
+end;
+
+procedure TBusinessLogic.ReleaseQuery;
+begin
+  FQuery.Free;
+end;
+
+function TBusinessLogic.CalculateFine(const DataRetorno: TDateTime): Currency;
+begin
+  FQuery.SQL.Text := 'SELECT SUM(EMP_MULTA) FROM Emprestimos WHERE EMP_DATA_RETORNO < :DataRetorno';
+  FQuery.ParamByName('DataRetorno').AsDateTime := DataRetorno;
+  FQuery.Open;
+  Result := FQuery.Fields[0].AsCurrency;
+  FQuery.Close;
+end;
+
+procedure TBusinessLogic.BlockUser(UsuarioID: Integer);
+begin
+  FQuery.SQL.Text := 'UPDATE Usuarios SET USU_BLOQUEADO = 1, USU_DATA_INATIVO = :DataInativo WHERE USU_ID = :UsuarioID';
+  FQuery.ParamByName('DataInativo').AsDateTime := Now; // Defina a data atual correta
+  FQuery.ParamByName('UsuarioID').AsInteger := UsuarioID;
+  FQuery.ExecSQL;
+end;
+
+procedure TBusinessLogic.CalculateFinesAndBlockUsers;
+var
+  LCon: TFDConnection;
+  LQry: TFDQuery;
+begin
+  LCon := TDataUtils.CreateConnection;
+  LQry := TFDQuery.Create(nil);
+  try
+    LCon.Connected := True;
+    LQry.Connection := LCon;
+
+    LQry.SQL.Text :=
+      'SELECT EMP_ID, EMP_DATA_RETORNO, USUARIO_ID ' +
+      'FROM Emprestimos ' +
+      'WHERE EMP_STATUS = :StatusAberto';
+    LQry.ParamByName('StatusAberto').AsInteger := 1;
+    LQry.Open;
+
+    while not LQry.Eof do
+    begin
+      if LQry.FieldByName('EMP_DATA_RETORNO').AsDateTime < Date then
+      begin
+        // Bloquear o usuário
+        BlockUser(LQry.FieldByName('USUARIO_ID').AsInteger);
+      end;
+
+      LQry.Next;
+    end;
+  finally
+    LQry.Close;
+    LQry.DisposeOf;
+    LCon.Connected := False;
+    LCon.DisposeOf;
+  end;
+end;
+
+procedure TBusinessLogic.UpdateStatusAndBlockUser(MovimentoID: Integer);
+var
+  LCon: TFDConnection;
+  LQry: TFDQuery;
+  Multa: Currency;
+begin
+  LCon := TDataUtils.CreateConnection;
+  LQry := TFDQuery.Create(nil);
+  try
+    LCon.Connected := True;
+    LQry.Connection := LCon;
+
+    // Obter informações do movimento
+    LQry.SQL.Text :=
+      'SELECT EMP_DATA_RETORNO ' +
+      'FROM Emprestimos ' +
+      'WHERE EMP_ID = :MovimentoID';
+    LQry.ParamByName('MovimentoID').AsInteger := MovimentoID;
+    LQry.Open;
+
+    // Verificar se o movimento está atrasado
+    if LQry.FieldByName('EMP_DATA_RETORNO').AsDateTime < Date then
+    begin
+      // Calcular a multa
+      Multa := CalculateFine(LQry.FieldByName('EMP_DATA_RETORNO').AsDateTime);
+
+      // Atualizar a multa e o status do movimento
+      LQry.SQL.Text :=
+        'UPDATE Emprestimos ' +
+        'SET EMP_MULTA = :Multa, EMP_STATUS = :Status ' +
+        'WHERE EMP_ID = :MovimentoID';
+      LQry.ParamByName('Multa').AsCurrency := Multa;
+      LQry.ParamByName('Status').AsInteger := 2; // Defina o valor correto para o status de bloqueio
+      LQry.ParamByName('MovimentoID').AsInteger := MovimentoID;
+      LQry.ExecSQL;
+
+      // Bloquear o usuário
+      BlockUser(LQry.FieldByName('USUARIO_ID').AsInteger);
+    end;
+
+  finally
+    LQry.Free;
+    LCon.Connected := False;
+    LCon.Free;
+  end;
+end;
+
+end.
+

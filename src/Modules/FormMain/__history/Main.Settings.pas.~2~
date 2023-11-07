@@ -1,0 +1,29 @@
+unit Main.Settings;
+
+interface
+
+uses
+  System.SysUtils,
+  System.Types,
+  System.UITypes,
+  System.Classes,
+  FireDAC.Comp.Client,
+  System.Threading,
+  System.IOUtils,
+  Fmx.Dialogs,
+  System.Net.HttpClient,
+  System.SyncObjs,
+  Fmx.Objects,
+  Fmx.Types;
+
+type
+  TMain_Settings = class
+  Private
+  Public
+  end;
+
+implementation
+
+{ TMain_Settings }
+
+End.

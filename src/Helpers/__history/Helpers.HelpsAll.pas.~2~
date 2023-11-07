@@ -1,0 +1,33 @@
+unit Helpers.HelpsAll;
+
+interface
+
+uses
+  System.SysUtils;
+
+type
+  THelpsAll = class
+  private
+  public
+   class function GenerateSalt: string;
+  end;
+
+implementation
+
+{ THelpsAll }
+
+class function THelpsAll.GenerateSalt: string;
+const
+  PossibleChars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+var
+  I: Integer;
+begin
+  Randomize;
+  Result := '';
+  for I := 1 to 16 do
+  begin
+    Result := Result + PossibleChars[Random(Length(PossibleChars)) + 1];
+  end;
+end;
+
+end.

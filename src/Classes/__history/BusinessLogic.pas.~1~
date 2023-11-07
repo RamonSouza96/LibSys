@@ -1,0 +1,77 @@
+unit BusinessLogic;
+
+interface
+
+type
+  TMovementBusiness = class
+  public
+    class function CalculateFine(const DataRetorno: TDateTime): Currency;
+    class procedure BlockUser(UsuarioID: Integer);
+    class procedure CalculateFinesAndBlockUsers;
+  end;
+
+implementation
+
+uses
+  System.SysUtils, System.DateUtils, Movement.Controller, Dm.Utils;
+
+const
+  MAX_FINE_VALUE = 100.00; // Valor máximo da multa para bloqueio do usuário
+
+class function TMovementBusiness.CalculateFine(const DataRetorno: TDateTime): Currency;
+begin
+  // Implemente a lógica de cálculo da multa com base na data de retorno prevista
+  // e retorne o valor da multa calculada
+  Result := 0.0;
+  var DiasAtraso := DaysBetween(DataRetorno, Date);
+  if DiasAtraso > 0 then
+    Result := DiasAtraso * 5.0; // Exemplo: Multa de R$ 5,00 por dia de atraso
+end;
+
+class procedure TMovementBusiness.BlockUser(UsuarioID: Integer);
+begin
+  // Implemente o código para bloquear o usuário com base no ID
+  // Isso pode envolver a atualização de um campo "Bloqueado" na tabela de usuários,
+  // a revogação de permissões de acesso, ou qualquer outra lógica de bloqueio desejada
+  // Exemplo:
+  var LCon := TDataUtils.CreateConnection;
+  try
+    var UpdateSql := 'UPDATE Usuarios SET Bloqueado = 1 WHERE USU_ID = :UsuarioID';
+    var LQry := TDataUtils.CreateQuery(LCon, UpdateSql);
+    try
+      LQry.ParamByName('UsuarioID').AsInteger := UsuarioID;
+      LQry.ExecSQL;
+    finally
+      LQry.DisposeOf;
+    end;
+  finally
+    LCon.Connected := False;
+    LCon.DisposeOf;
+  end;
+end;
+
+class procedure TMovementBusiness.CalculateFinesAndBlockUsers;
+var
+  Movements: TArray<TMovementData>;
+  Movement: TMovementData;
+begin
+  // Obter todos os movimentos
+  Movements := TMovementController.GetAllMovements;
+
+  // Percorrer os movimentos e calcular multas
+  for Movement in Movements do
+  begin
+    // Calcular a multa com base na data de retorno prevista
+    var Multa := CalculateFine(Movement.DataRetorno);
+
+    // Atualizar o registro de empréstimo com a multa
+    TMovementController.UpdateMovementFine(Movement.Id, Multa);
+
+    // Verificar se a multa excede o valor máximo para bloquear o usuário
+    if Multa > MAX_FINE_VALUE then
+      BlockUser(Movement.UsuarioId);
+  end;
+end;
+
+end.
+

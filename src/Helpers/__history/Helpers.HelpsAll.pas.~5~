@@ -1,0 +1,40 @@
+unit Helpers.HelpsAll;
+
+interface
+
+uses
+  System.SysUtils, System.Classes, FMX.Forms;
+
+type
+  THelpsAll = class
+  private
+  public
+   class function GenerateSalt: string;
+   class procedure OpenForm(AClasseForm: TComponentClass; var AForm);
+  end;
+
+implementation
+
+{ THelpsAll }
+
+class procedure THelpsAll.OpenForm(AClasseForm: TComponentClass; var AForm);
+begin
+  try
+    if Not Assigned(TForm(AForm)) then
+    begin
+     Application.CreateForm(AClasseForm, AForm);
+    end;
+  finally
+    TForm(AForm).Show;
+  end;
+end;
+
+class function THelpsAll.GenerateSalt: string;
+var
+  GUID: TGUID;
+begin
+  CreateGUID(GUID);
+  Result := GUID.ToString().Replace('{', '').Replace('}', '').Replace('-', '');
+end;
+
+end.

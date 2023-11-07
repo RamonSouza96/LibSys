@@ -1,0 +1,65 @@
+﻿unit Dm.Script;
+
+interface
+
+const
+  TableEmprestimos =
+    'CREATE TABLE IF NOT EXISTS Emprestimos (' +
+    '    EMP_ID INTEGER PRIMARY KEY AUTOINCREMENT,' +
+    '    USUARIO_ID INTEGER REFERENCES Usuarios (USU_ID),' +
+    '    LIVRO_ID INTEGER REFERENCES Livros (LI_ID),' +
+    '    EMP_DATA_SAIDA DATE,' +
+    '    EMP_DATA_DEVOLUCAO DATE,' +
+    '    EMP_OBSERVACAO TEXT (1000)' +
+    ');';
+
+  TableLivros =
+    'CREATE TABLE IF NOT EXISTS Livros (' +
+    '    LIV_ID INTEGER PRIMARY KEY AUTOINCREMENT,' +
+    '    LIV_NOME_LIVRO VARCHAR (300),' +
+    '    LIV_NOME_AUTOR VARCHAR (100),' +
+    '    LIV_NOME_EDITORA VARCHAR (150),' +
+    '    LIV_DATA_PUBLICACAO DATE,' +
+    '    LIV_LOCALIZACAO VARCHAR (50),' +
+    '    LIV_QUANTIDADE INTEGER (10) DEFAULT (1),' +
+    '    LIV_CATEGORIA       INTEGER,'+
+    '    LIV_CAPA BLOB,' +
+    '    LIV_DATA_CADASTRO DATETIME,' +
+    '    LIV_USUARIO INTEGER REFERENCES Usuarios (USU_ID)' +
+    ');';
+
+  TableParametros =
+    'CREATE TABLE IF NOT EXISTS Parametros (' +
+    '    PAR_ID INTEGER PRIMARY KEY AUTOINCREMENT,' +
+    '    PAR_VALOR_MULTA REAL,' +
+    '    PAR_DIAS_PARA_MULTAR INTEGER,' +
+    '    PAR_LIMITE_LIVROS INTEGER,' +
+    '    PAR_DIAS_REATIVACAO INTEGER' +
+    ');';
+
+  TableUsuarios =
+    'CREATE TABLE IF NOT EXISTS Usuarios (' +
+    '    USU_ID INTEGER PRIMARY KEY AUTOINCREMENT,' +
+    '    USU_NOME VARCHAR (50),' +
+    '    USU_LOGIN VARCHAR (50),' +
+    '    USU_SENHA VARCHAR (100),' +
+    '    USU_EMAIL VARCHAR (50),' +
+    '    USU_TIPO_USUARIO INTEGER,' +
+    '    USU_ATIVO BOOLEAN,' +
+    '    USU_DATA_CADASTRO DATE,' +
+    '    USU_DATA_INATIVO  VARCHAR (10),' +
+    '    USU_SALT VARCHAR (100)' +
+    ');';
+
+var
+  MyConstants: array [0 .. 3] of string = (
+    TableEmprestimos,  { Tabela de empréstimos. }
+    TableLivros,       { Tabela de livros. }
+    TableParametros,   { Tabela de parâmetros. }
+    TableUsuarios      { Tabela de usuários. }
+  );
+
+implementation
+
+end.
+

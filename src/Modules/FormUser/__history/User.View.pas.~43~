@@ -1,0 +1,178 @@
+unit User.View;
+
+interface
+
+uses
+  System.SysUtils, System.Types, System.UITypes, System.Classes,
+  System.Variants,
+  FMX.Types, FMX.Controls, FMX.Forms, FMX.Graphics, FMX.Dialogs, FMX.Objects,
+  FMX.ListView.Types, FMX.ListView.Appearances, FMX.ListView.Adapters.Base,
+  FMX.ListView, FMX.Layouts, Skia, Skia.FMX, FMX.Effects,
+  FMX.Controls.Presentation, FMX.StdCtrls, FMX.Edit, FMX.Memo.Types,
+  FMX.ScrollBox, FMX.Menus, FMX.Memo;
+
+type
+  TFormUser = class(TForm)
+    RectUserBackgraund: TRectangle;
+    Layout2: TLayout;
+    LvUser: TListView;
+    Layout1: TLayout;
+    Rectangle1: TRectangle;
+    Line1: TLine;
+    SkLabel1: TSkLabel;
+    Layout3: TLayout;
+    SkLblTit: TSkLabel;
+    RectUserAluno: TRectangle;
+    SkLabel5: TSkLabel;
+    SkSvg3: TSkSvg;
+    ShadowIndcator: TShadowEffect;
+    HorzSH: THorzScrollBox;
+    RectUserAdm: TRectangle;
+    SkLabel2: TSkLabel;
+    SkSvg2: TSkSvg;
+    RectUserOperador: TRectangle;
+    SkLabel3: TSkLabel;
+    SkSvg4: TSkSvg;
+    RectName: TRectangle;
+    EdtCadNome: TEdit;
+    SkSvg5: TSkSvg;
+    RectEmail: TRectangle;
+    EdtCadEmail: TEdit;
+    SkSvg8: TSkSvg;
+    RectLogin: TRectangle;
+    EdtCadConta: TEdit;
+    SkSvg6: TSkSvg;
+    Rectangle3: TRectangle;
+    SkLabel6: TSkLabel;
+    ShadowEffect2: TShadowEffect;
+    RectSenha: TRectangle;
+    EdtCadSenha: TEdit;
+    SkSvg9: TSkSvg;
+    SkSvgViewPassword: TSkSvg;
+    Rectangle4: TRectangle;
+    SkLabel7: TSkLabel;
+    ShadowEffect4: TShadowEffect;
+    StyleBook1: TStyleBook;
+    Rectangle2: TRectangle;
+    SkLabel4: TSkLabel;
+    ShadowEffect1: TShadowEffect;
+    RectNewUser: TRectangle;
+    BtnNewUser: TSpeedButton;
+    ShadowEffect3: TShadowEffect;
+    BtnSaveUser: TSpeedButton;
+    SkSvg1: TSkSvg;
+    Rectangle5: TRectangle;
+    SkSvgBack: TSkSvg;
+    Layout4: TLayout;
+    CbxAtivo: TCheckBox;
+    CbxInativo: TCheckBox;
+    Rectangle6: TRectangle;
+    SkLabel9: TSkLabel;
+    ShadowEffect5: TShadowEffect;
+    PopupMenu1: TPopupMenu;
+    ItemDeleteUser: TMenuItem;
+    procedure SkLabel5Click(Sender: TObject);
+    procedure RectUserAlunoClick(Sender: TObject);
+    procedure CbxAtivoClick(Sender: TObject);
+    procedure LvUserItemClick(const Sender: TObject;
+      const AItem: TListViewItem);
+    procedure SkSvgViewPasswordClick(Sender: TObject);
+    procedure BtnNewUserClick(Sender: TObject);
+    procedure FormShow(Sender: TObject);
+    procedure EdtCadContaEnter(Sender: TObject);
+    procedure BtnSaveUserClick(Sender: TObject);
+    procedure SkSvgBackClick(Sender: TObject);
+    procedure ItemDeleteUserClick(Sender: TObject);
+    procedure EdtCadNomeKeyUp(Sender: TObject; var Key: Word; var KeyChar: Char;
+      Shift: TShiftState);
+  private
+    { Private declarations }
+  public
+    { Public declarations }
+  end;
+
+var
+  FormUser: TFormUser;
+
+implementation
+
+{$R *.fmx}
+
+uses User.Settings;
+
+procedure TFormUser.BtnNewUserClick(Sender: TObject);
+begin
+  TUser_Settings.CreateNewUser;
+end;
+
+procedure TFormUser.BtnSaveUserClick(Sender: TObject);
+begin
+ TUser_Settings.SaveAndUpdateUser;
+end;
+
+procedure TFormUser.CbxAtivoClick(Sender: TObject);
+begin
+  TUser_Settings.CheckStatus;
+end;
+
+procedure TFormUser.EdtCadContaEnter(Sender: TObject);
+begin
+  TUser_Settings.iInputFocus := Sender;
+end;
+
+procedure TFormUser.EdtCadNomeKeyUp(Sender: TObject; var Key: Word;
+  var KeyChar: Char; Shift: TShiftState);
+begin
+ if Key = 9 then
+  begin
+    Key := 0;
+    TUser_Settings.NextInput;
+  end
+end;
+
+procedure TFormUser.FormShow(Sender: TObject);
+begin
+ TUser_Settings.iInputFocus := EdtCadNome;
+end;
+
+procedure TFormUser.ItemDeleteUserClick(Sender: TObject);
+begin
+ TUser_Settings.DeleteUser;
+end;
+
+procedure TFormUser.LvUserItemClick(const Sender: TObject;
+  const AItem: TListViewItem);
+begin
+ TUser_Settings.ClickItemListView(AItem);
+end;
+
+procedure TFormUser.RectUserAlunoClick(Sender: TObject);
+begin
+ TUser_Settings.ClickCategoria(Sender);
+end;
+
+procedure TFormUser.SkLabel5Click(Sender: TObject);
+begin
+ TRectangle(FormUser.ShadowIndcator.Parent).Stroke.Kind := TBrushKind.None;
+end;
+
+procedure TFormUser.SkSvgBackClick(Sender: TObject);
+begin
+ TUser_Settings.FormUserClose;
+end;
+
+procedure TFormUser.SkSvgViewPasswordClick(Sender: TObject);
+begin
+  if EdtCadSenha.Password = true then
+  begin
+    EdtCadSenha.Password := False;
+    SkSvgViewPassword.Svg.OverrideColor := $FF9B9B9B;
+  end
+  else
+  begin
+    EdtCadSenha.Password := true;
+    SkSvgViewPassword.Svg.OverrideColor := $FF016CB5;
+  end;
+end;
+
+end.
