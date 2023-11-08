@@ -7,33 +7,6 @@ Antes de executar o projeto, é necessário atender aos seguintes requisitos:
 •	Biblioteca de componentes visuais Skia (localizada em \LibSys\Assets\Components)
 Recomenda-se compilar o projeto utilizando a mesma versão do Delphi (11.2) para evitar possíveis incompatibilidades ou problemas de compilação.
 Estrutura de Pastas e Arquivos
-A estrutura do projeto é organizada da seguinte maneira:
-└── Assets
-    ├── Fonts
-    ├── Icons
-    ├── Images
-    ├── Links
-    └── Styles
-└── bin
-    └── Win32
-        └── Debug
-            ├── Assets
-            └── Data
-└── src
-    ├── Classes
-    ├── Data
-    ├── DataModule
-    ├── Helpers
-    ├── Modules
-    │   ├── FormBookManager
-    │   ├── FormLogin
-    │   ├── FormMain
-    │   ├── FormMovement
-    │   ├── FormUser
-    │   └── FormWidgets
-    │       └── __history
-    └── __history
-
 
 # Executando o Projeto
 Para executar o projeto, abra o arquivo LibSys.dproj no Delphi 11.2 e compile-o. Certifique-se de que a biblioteca de componentes visuais Skia esteja instalada e configurada corretamente.
