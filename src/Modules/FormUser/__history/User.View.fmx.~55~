@@ -853,7 +853,7 @@ object FormUser: TFormUser
     end
     object PopupMenu1: TPopupMenu
       Left = 174
-      Top = 18
+      Top = 10
       object ItemDeleteUser: TMenuItem
         Text = 'Deletar Us'#250'ario'
         OnClick = ItemDeleteUserClick

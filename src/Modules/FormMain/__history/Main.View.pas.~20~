@@ -1,10 +1,10 @@
-unit Main.View;
+﻿unit Main.View;
 
 interface
 
 uses
   System.SysUtils, System.Types, System.UITypes, System.Classes, System.Variants,
-  FMX.Types, FMX.Controls, FMX.Forms, FMX.Graphics, FMX.Dialogs, Skia, Skia.FMX,
+  FMX.Types, FMX.Controls, FMX.Forms, FMX.Graphics, FMX.Dialogs, Skia, FMX.Skia,
   FMX.Layouts, FMX.Effects, FMX.Objects, FMX.Controls.Presentation, FMX.StdCtrls,
   FMX.TabControl;
 
@@ -39,8 +39,9 @@ type
     TabForm2: TTabItem;
     procedure FormCreate(Sender: TObject);
     procedure RectGUsuarioClick(Sender: TObject);
-    procedure FormKeyUp(Sender: TObject; var Key: Word; var KeyChar: Char;
-      Shift: TShiftState);
+    procedure RectGLivroClick(Sender: TObject);
+    procedure RectGEmprestimoClick(Sender: TObject);
+    procedure BtnLogoutClick(Sender: TObject);
   private
     { Private declarations }
   public
@@ -54,7 +55,13 @@ implementation
 
 {$R *.fmx}
 
-uses User.Settings, Main.Settings;
+uses User.Settings, Main.Settings, BookManager.Settings, Movement.Settings,
+  LibrarySession;
+
+procedure TFormMain.BtnLogoutClick(Sender: TObject);
+begin
+  Application.Terminate;
+end;
 
 procedure TFormMain.FormCreate(Sender: TObject);
 var
@@ -64,20 +71,29 @@ begin
   TmpMain^ := Self;
 end;
 
-procedure TFormMain.FormKeyUp(Sender: TObject; var Key: Word; var KeyChar: Char;
-  Shift: TShiftState);
+procedure TFormMain.RectGEmprestimoClick(Sender: TObject);
 begin
-  if Key = 13 then
+  TMovementSettings.OpenFormMovement;
+end;
+
+procedure TFormMain.RectGLivroClick(Sender: TObject);
+begin
+  if  TLibrarySession.GetInstance.GetUserType <> TUserType.utAdministrador then
   begin
-    Key := 0;
-    TUser_Settings.NextInput;
+    ShowMessage('Você precisa de permissão de administrador!');
+    Exit;
   end;
+  TBookManager_Settings.OpenFormBookManager;
 end;
 
 procedure TFormMain.RectGUsuarioClick(Sender: TObject);
 begin
- TUser_Settings.OpenFormUser;
- //TMain_Settings.SlideEffectOpenForm;
+ if  TLibrarySession.GetInstance.GetUserType <> TUserType.utAdministrador then
+  begin
+    ShowMessage('Você precisa de permissão de administrador!');
+    Exit;
+  end;
+  TUser_Settings.OpenFormUser;
 end;
 
 end.

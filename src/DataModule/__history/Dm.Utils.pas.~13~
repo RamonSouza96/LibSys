@@ -1,4 +1,4 @@
-unit Dm.Utils;
+﻿unit Dm.Utils;
 
 interface
 
@@ -6,15 +6,34 @@ uses
  FireDAC.Comp.Client,System.SysUtils,FMX.Dialogs,System.IOUtils,FireDAC.Comp.DataSet;
 
  type
-  TDataUtils = class
-  private
-  public
-   class function  CreateQuery(AConnection: TFDConnection; SQL: string): TFDQuery;
-   class function  CreateConnection: TFDConnection;
-   class function  GetPathData: string;
-  end;
+   TDataUtils = class
+   private
+   public
+     class function CreateQuery(AConnection: TFDConnection; SQL: string): TFDQuery;
+     class function CreateConnection: TFDConnection;
+     class function GetPathData: string;
+     class procedure CheckDataBase(AQuery: TFDQuery; ACon: TFDConnection);
+   end;
 
 implementation
+
+uses Dm.Script;
+
+class procedure TDataUtils.CheckDataBase(AQuery: TFDQuery; ACon: TFDConnection);
+var
+  I: Integer;
+begin
+  AQuery.Close;
+  AQuery.SQL.Clear;
+  AQuery.Open('SELECT name FROM sqlite_master WHERE type=''table''');
+  if AQuery.RecordCount -1 <> High(MyConstants) + 1  then
+  begin
+    for I := Low(MyConstants) to High(MyConstants) do
+    begin
+      ACon.ExecSQL(MyConstants[I]);
+    end;
+  end;
+end;
 
 class function TDataUtils.CreateConnection: TFDConnection;
 var
@@ -25,7 +44,7 @@ begin
   FDCon := TFDConnection.Create(nil);
   try
     // Obter o caminho para o banco de dados
-    LPath := TPath.Combine(TPath.GetDocumentsPath, 'Data.db');
+    LPath := TPath.Combine(TDataUtils.GetPathData, 'Data.db');
     if LPath = '' then
       raise Exception.Create('Não foi possível obter o caminho para o banco de dados');
 
@@ -70,7 +89,7 @@ const
 var
   BaseDir: string;
 begin
-  BaseDir := TPath.GetDocumentsPath;
+  BaseDir := System.SysUtils.GetCurrentDir;
   try
     // Verificar se o diretório de dados existe e criá-lo se necessário
     if not DirectoryExists(BaseDir + DataDir) then

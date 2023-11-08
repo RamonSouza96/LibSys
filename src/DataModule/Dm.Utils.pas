@@ -3,17 +3,17 @@
 interface
 
 uses
- FireDAC.Comp.Client,System.SysUtils,FMX.Dialogs,System.IOUtils,FireDAC.Comp.DataSet;
+ FireDAC.Comp.Client, System.SysUtils, FMX.Dialogs, System.IOUtils, FireDAC.Comp.DataSet;
 
  type
-  TDataUtils = class
-  private
-  public
-   class function CreateQuery(AConnection: TFDConnection; SQL: string): TFDQuery;
-   class function CreateConnection: TFDConnection;
-   class function GetPathData: string;
-   class procedure CheckDataBase(AQuery: TFDQuery; ACon: TFDConnection);
-  end;
+   TDataUtils = class
+   private
+   public
+     class function CreateQuery(AConnection: TFDConnection; SQL: string): TFDQuery;
+     class function CreateConnection: TFDConnection;
+     class function GetPathData: string;
+     class procedure CheckDataBase(AQuery: TFDQuery; ACon: TFDConnection);
+   end;
 
 implementation
 

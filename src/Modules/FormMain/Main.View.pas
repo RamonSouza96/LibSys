@@ -78,7 +78,7 @@ end;
 
 procedure TFormMain.RectGLivroClick(Sender: TObject);
 begin
-  if  TLibrarySession.GetInstance.GetUserType <> TUserType.utAdministrador then
+  if TLibrarySession.GetInstance.GetUserType <> TUserType.utAdministrador then
   begin
     ShowMessage('Você precisa de permissão de administrador!');
     Exit;
@@ -88,7 +88,7 @@ end;
 
 procedure TFormMain.RectGUsuarioClick(Sender: TObject);
 begin
- if  TLibrarySession.GetInstance.GetUserType <> TUserType.utAdministrador then
+ if TLibrarySession.GetInstance.GetUserType <> TUserType.utAdministrador then
   begin
     ShowMessage('Você precisa de permissão de administrador!');
     Exit;
